@@ -51,9 +51,57 @@ function App() {
       socketRef.current?.disconnect();
     };
   }, []);
+
+  const joinRoom = () => {
+    if (roomCode && socketRef) {
+      socketRef.current?.emit("joinRoom", { roomCode });
+      setJoined(true);
+    }
+  };
+  const voteTrack = () => {
+    if (roomCode && trackId && socketRef.current) {
+      socketRef.current.emit("voteTrack", { roomCode, trackId });
+    }
+  };
   return (
     <div className="app">
       <h1>🎵 Collaborative Playlist Room</h1>
+      {!joined ? (
+        <div className="join-room">
+          <input
+            type="text"
+            placeholder="Enter Room Code"
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value)}
+          />
+          <button onClick={joinRoom}>Join Room</button>
+        </div>
+      ) : (
+        <div className="room">
+          <h2>Room: {roomCode}</h2>
+          <div className="track-voting">
+            <input
+              type="text"
+              placeholder="Enter Track ID"
+              value={trackId}
+              onChange={(e) => setTrackId(e.target.value)}
+            />
+            <button onClick={voteTrack}>Vote Track</button>
+          </div>
+
+          <div className="votes">
+            <h3>Votes:</h3>
+            <ul>
+              {Object.entries(votes).map(([track, count]) => (
+                <li key={track}>
+                  {track}: {count as number} vote
+                  {(count as number) > 1 ? "s" : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
