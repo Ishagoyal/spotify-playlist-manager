@@ -65,20 +65,24 @@ function App() {
   };
   return (
     <div className="app">
-      <h1>🎵 Collaborative Playlist Room</h1>
+      <h1 className="title">🎵 Collaborative Playlist Room</h1>
+
       {!joined ? (
-        <div className="join-room">
+        <div className="join-room card">
+          <h2>Join a Room</h2>
           <input
             type="text"
             placeholder="Enter Room Code"
             value={roomCode}
             onChange={(e) => setRoomCode(e.target.value)}
           />
-          <button onClick={joinRoom}>Join Room</button>
+          <button onClick={joinRoom}>Join</button>
         </div>
       ) : (
-        <div className="room">
-          <h2>Room: {roomCode}</h2>
+        <div className="room card">
+          <h2>
+            Room: <span className="highlight">{roomCode}</span>
+          </h2>
           <div className="track-voting">
             <input
               type="text"
@@ -86,16 +90,18 @@ function App() {
               value={trackId}
               onChange={(e) => setTrackId(e.target.value)}
             />
-            <button onClick={voteTrack}>Vote Track</button>
+            <button onClick={voteTrack}>Vote</button>
           </div>
 
           <div className="votes">
-            <h3>Votes:</h3>
+            <h3>📊 Vote Results</h3>
             <ul>
               {Object.entries(votes).map(([track, count]) => (
                 <li key={track}>
-                  {track}: {count as number} vote
-                  {(count as number) > 1 ? "s" : ""}
+                  <span className="track-name">{track}</span>
+                  <span className="vote-count">
+                    {count as number} vote{(count as number) > 1 ? "s" : ""}
+                  </span>
                 </li>
               ))}
             </ul>
