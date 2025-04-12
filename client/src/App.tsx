@@ -13,11 +13,18 @@ interface ClientToServerEvents {
   voteTrack: (data: { roomCode: string; trackId: string }) => void;
 }
 
+interface SpotifyTrack {
+  id: string;
+  name: string;
+  artists: string;
+}
+
 function App() {
   const [roomCode, setRoomCode] = useState("");
   const [joined, setJoined] = useState(false);
   const [votes, setVotes] = useState({});
-  const [trackId, setTrackId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -52,17 +59,54 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const hash = window.location.hash;
+    const query = new URLSearchParams(window.location.search);
+
+    const accessToken = query.get("access_token");
+    const refreshToken = query.get("refresh_token");
+    if (accessToken) {
+      localStorage.setItem("spotify_token", accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem("spotify_refresh_token", refreshToken);
+    }
+  }, []);
+
   const joinRoom = () => {
-    if (roomCode && socketRef) {
+    if (roomCode.trim() && socketRef) {
       socketRef.current?.emit("joinRoom", { roomCode });
       setJoined(true);
     }
   };
-  const voteTrack = () => {
-    if (roomCode && trackId && socketRef.current) {
+  const voteTrack = (trackId: string) => {
+    if (roomCode.trim() && trackId && socketRef.current) {
       socketRef.current.emit("voteTrack", { roomCode, trackId });
     }
   };
+
+  const searchTracks = async () => {
+    if (!searchQuery.trim()) return;
+
+    const token = localStorage.getItem("spotify_token");
+
+    const res = await fetch(`http://localhost:3001/search?q=${searchQuery}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      // Token is invalid or expired
+      alert("Your Spotify session has expired. Please log in again.");
+      window.location.href = "http://localhost:3001/login"; // or your login route
+      return;
+    }
+
+    const data = await res.json();
+    setSearchResults(data.tracks);
+  };
+
   return (
     <div className="app">
       <h1 className="title">🎵 Collaborative Playlist Room</h1>
@@ -83,29 +127,32 @@ function App() {
           <h2>
             Room: <span className="highlight">{roomCode}</span>
           </h2>
-          <div className="track-voting">
+          <div className="search-box">
+            <h3>🔎 Search Spotify Tracks</h3>
             <input
               type="text"
-              placeholder="Enter Track ID"
-              value={trackId}
-              onChange={(e) => setTrackId(e.target.value)}
+              placeholder="Search for a track..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button onClick={voteTrack}>Vote</button>
+            <button onClick={searchTracks}>Search</button>
           </div>
-
-          <div className="votes">
-            <h3>📊 Vote Results</h3>
-            <ul>
-              {Object.entries(votes).map(([track, count]) => (
-                <li key={track}>
-                  <span className="track-name">{track}</span>
-                  <span className="vote-count">
-                    {count as number} vote{(count as number) > 1 ? "s" : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {searchResults.length > 0 && (
+            <div className="search-results card">
+              <h3>🎶 Search Results</h3>
+              <ul className="track-list">
+                {searchResults.map((track) => (
+                  <li key={track.id} className="track-item">
+                    <div className="track-info">
+                      <strong>{track.name}</strong>
+                      <span className="artist">by {track.artists}</span>
+                    </div>
+                    <button onClick={() => voteTrack(track.id)}>Vote</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>

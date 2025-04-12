@@ -64,37 +64,42 @@ button:hover {
   margin-top: 1rem;
 }
 
-.votes {
-  margin-top: 2rem;
-}
-
-.votes ul {
+.track-list {
   list-style: none;
-  padding-left: 0;
+  padding: 0;
+  margin-top: 1rem;
 }
 
-.votes li {
+.track-item {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
-  margin-bottom: 0.5rem;
-  background: #2a2a2a;
-  border-radius: 0.5rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #ddd;
 }
 
-.track-name {
-  font-weight: bold;
+.track-info {
+  display: flex;
+  flex-direction: column;
 }
 
-.vote-count {
+.artist {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.track-item button {
   background-color: #1db954;
-  padding: 0.3rem 0.7rem;
-  border-radius: 0.5rem;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
   font-weight: bold;
-  color: #000;
 }
 
-.highlight {
-  color: #1db954;
-  font-weight: bold;
+.track-item button:hover {
+  background-color: #17a74a;
 }
+
+
