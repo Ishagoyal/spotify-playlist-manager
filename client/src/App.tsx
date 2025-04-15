@@ -5,26 +5,39 @@ import React from "react";
 
 interface ServerToClientEvents {
   userJoined: (data: { userId: string }) => void;
-  trackVoted: (data: { trackId: string }) => void;
+  trackVoted: (data: { trackId: string; count: number }) => void;
+  initialVotes: (votes: Record<string, number>) => void;
+  votedTracks: (trackIds: string[]) => void;
 }
 
 interface ClientToServerEvents {
-  joinRoom: (data: { roomCode: string }) => void;
-  voteTrack: (data: { roomCode: string; trackId: string }) => void;
+  joinRoom: (data: { roomCode: string; userId: string }) => void;
+  voteTrack: (data: {
+    roomCode: string;
+    trackId: string;
+    userId: string;
+  }) => void;
+  getVotedTracks: (
+    data: { roomCode: string; userId: string },
+    callback: (votedTrackIds: string[]) => void
+  ) => void;
 }
 
 interface SpotifyTrack {
   id: string;
   name: string;
   artists: string;
+  image: string;
+  url: string;
 }
 
 function App() {
   const [roomCode, setRoomCode] = useState("");
   const [joined, setJoined] = useState(false);
-  const [votes, setVotes] = useState({});
+  const [votes, setVotes] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
+  const [votedTracks, setVotedTracks] = useState<Set<string>>(new Set());
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -32,56 +45,132 @@ function App() {
   > | null>(null);
 
   useEffect(() => {
-    // Establishes a WebSocket connection to the backend server
     socketRef.current = io("http://localhost:3001");
 
-    // Logs the client's unique socket ID
     socketRef.current.on("connect", () => {
       console.log("Connected to server with ID:", socketRef.current?.id);
     });
 
-    // Fired when another user joins the same room
     socketRef.current.on("userJoined", (data) => {
       console.log("Another user joined:", data.userId);
     });
 
-    // Receives a signal from the server when someone votes for a track
     socketRef.current.on("trackVoted", (data) => {
-      setVotes((prev) => ({
-        ...prev,
-        [data.trackId]: (prev[data.trackId] || 0) + 1,
+      setVotes((prevVotes) => ({
+        ...prevVotes,
+        [data.trackId]: data.count,
       }));
     });
 
-    // Disconnects the socket when the component unmounts
+    socketRef.current.on("initialVotes", (voteMap) => {
+      setVotes(voteMap);
+    });
+
+    socketRef.current.on("votedTracks", (trackIds) => {
+      setVotedTracks(new Set(trackIds));
+    });
+
     return () => {
       socketRef.current?.disconnect();
     };
   }, []);
 
   useEffect(() => {
-    const hash = window.location.hash;
     const query = new URLSearchParams(window.location.search);
-
     const accessToken = query.get("access_token");
     const refreshToken = query.get("refresh_token");
+    const spotifyUserId = query.get("spotify_user_id");
+
     if (accessToken) {
       localStorage.setItem("spotify_token", accessToken);
     }
     if (refreshToken) {
       localStorage.setItem("spotify_refresh_token", refreshToken);
     }
+    if (spotifyUserId) {
+      localStorage.setItem("spotify_user_id", spotifyUserId);
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedRoom = localStorage.getItem("room_code");
+    const userId = localStorage.getItem("spotify_user_id");
+
+    const socket = socketRef.current;
+
+    if (savedRoom && socket && userId) {
+      socket.once("connect", () => {
+        setRoomCode(savedRoom);
+        setJoined(true);
+
+        socket.emit("joinRoom", { roomCode: savedRoom, userId });
+
+        socket.emit(
+          "getVotedTracks",
+          { roomCode: savedRoom, userId },
+          (votedTrackIds: string[]) => {
+            console.log("Auto-rejoin: received voted tracks:", votedTrackIds);
+            setVotedTracks(new Set(votedTrackIds));
+          }
+        );
+      });
+    }
   }, []);
 
   const joinRoom = () => {
-    if (roomCode.trim() && socketRef) {
-      socketRef.current?.emit("joinRoom", { roomCode });
+    const userId = localStorage.getItem("spotify_user_id");
+    if (!roomCode.trim() || !socketRef.current || !userId) return;
+
+    const socket = socketRef.current;
+
+    // Wait for socket connection before joining room
+    if (!socket.connected) {
+      socket.once("connect", () => {
+        socket.emit("joinRoom", { roomCode, userId });
+
+        setJoined(true);
+        localStorage.setItem("room_code", roomCode);
+
+        socket.emit(
+          "getVotedTracks",
+          { roomCode, userId },
+          (votedTrackIds: string[]) => {
+            console.log("Received voted tracks after join:", votedTrackIds);
+            setVotedTracks(new Set(votedTrackIds));
+          }
+        );
+      });
+    } else {
+      socket.emit("joinRoom", { roomCode, userId });
+
       setJoined(true);
+      localStorage.setItem("room_code", roomCode);
+
+      socket.emit(
+        "getVotedTracks",
+        { roomCode, userId },
+        (votedTrackIds: string[]) => {
+          console.log("Received voted tracks after join:", votedTrackIds);
+          setVotedTracks(new Set(votedTrackIds));
+        }
+      );
     }
   };
+
   const voteTrack = (trackId: string) => {
-    if (roomCode.trim() && trackId && socketRef.current) {
-      socketRef.current.emit("voteTrack", { roomCode, trackId });
+    const userId = localStorage.getItem("spotify_user_id");
+    if (!roomCode.trim() || !trackId || !socketRef.current || !userId) return;
+
+    if (votedTracks.has(trackId)) return;
+
+    if (socketRef.current.id) {
+      socketRef.current.emit("voteTrack", {
+        roomCode,
+        trackId,
+        userId,
+      });
+
+      setVotedTracks((prev) => new Set(prev).add(trackId));
     }
   };
 
@@ -97,9 +186,8 @@ function App() {
     });
 
     if (!res.ok) {
-      // Token is invalid or expired
       alert("Your Spotify session has expired. Please log in again.");
-      window.location.href = "http://localhost:3001/login"; // or your login route
+      window.location.href = "http://localhost:3001/login";
       return;
     }
 
@@ -137,20 +225,51 @@ function App() {
             />
             <button onClick={searchTracks}>Search</button>
           </div>
+
           {searchResults.length > 0 && (
             <div className="search-results card">
               <h3>🎶 Search Results</h3>
-              <ul className="track-list">
-                {searchResults.map((track) => (
-                  <li key={track.id} className="track-item">
-                    <div className="track-info">
-                      <strong>{track.name}</strong>
-                      <span className="artist">by {track.artists}</span>
+              <div className="track-grid">
+                {searchResults.map((track) => {
+                  const hasVoted = votedTracks.has(track.id);
+                  return (
+                    <div key={track.id} className="track-card">
+                      <img
+                        src={track.image}
+                        alt={track.name}
+                        className="album-image"
+                      />
+                      <div className="track-card-content">
+                        <h4 className="track-title">{track.name}</h4>
+                        <p className="track-artist">by {track.artists}</p>
+                        <div className="track-actions">
+                          <button
+                            onClick={() => voteTrack(track.id)}
+                            className={`vote-button ${hasVoted ? "voted" : ""}`}
+                            disabled={hasVoted}
+                          >
+                            {hasVoted ? "✓ Voted" : " Vote 🎧"}
+                          </button>
+                          <a
+                            href={track.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="spotify-link"
+                          >
+                            Open on Spotify 🔗
+                          </a>
+                        </div>
+                        {votes[track.id] !== undefined && (
+                          <p className="vote-count">
+                            {votes[track.id]} vote
+                            {votes[track.id] > 1 ? "s" : ""}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <button onClick={() => voteTrack(track.id)}>Vote</button>
-                  </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

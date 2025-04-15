@@ -4,6 +4,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const axios = require("axios");
+const mongoose = require("mongoose");
+
+const Vote = require("./models/Vote"); // ✅ Make sure Vote schema includes roomCode, trackId, count, votedBy
 
 const app = express();
 const server = http.createServer(app);
@@ -17,7 +20,19 @@ const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
 
-// Step 1: Redirect to Spotify login
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ======== ROUTES ========
+app.get("/", (req, res) => {
+  res.send("Socket.IO server running");
+});
+
 app.get("/login", (req, res) => {
   const scope = "user-read-private user-read-email";
   const authUrl =
@@ -28,10 +43,10 @@ app.get("/login", (req, res) => {
       scope,
       redirect_uri,
     });
+
   res.redirect(authUrl);
 });
 
-// Step 2: Spotify redirects here with a code
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
 
@@ -47,14 +62,20 @@ app.get("/callback", async (req, res) => {
     const response = await axios.post(
       "https://accounts.spotify.com/api/token",
       body,
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
 
-    // This is where you’d store the token or redirect to frontend with it
+    const userProfile = await axios.get("https://api.spotify.com/v1/me", {
+      headers: {
+        Authorization: `Bearer ${response.data.access_token}`,
+      },
+    });
+
+    // Now you have access to user's Spotify ID
+    const spotifyUserId = userProfile.data.id;
+
     res.redirect(
-      `http://localhost:5173/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}`
+      `http://localhost:5173/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
     );
   } catch (err) {
     console.error("Token exchange error:", err.response?.data || err);
@@ -64,7 +85,7 @@ app.get("/callback", async (req, res) => {
 
 app.get("/search", async (req, res) => {
   const query = req.query.q;
-  const token = req.headers.authorization?.split(" ")[1]; // 'Bearer <token>'
+  const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ error: "Missing token" });
@@ -86,6 +107,8 @@ app.get("/search", async (req, res) => {
       id: track.id,
       name: track.name,
       artists: track.artists.map((a) => a.name).join(", "),
+      image: track.album.images?.[0]?.url || "",
+      url: track.external_urls.spotify,
     }));
 
     res.json({ tracks });
@@ -95,21 +118,70 @@ app.get("/search", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Socket.IO server running");
-});
-
+// ======== SOCKET.IO ========
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
-  socket.on("joinRoom", ({ roomCode }) => {
+  socket.on("joinRoom", async ({ roomCode, userId }) => {
     socket.join(roomCode);
-    console.log(`${socket.id} joined room ${roomCode}`);
-    io.to(roomCode).emit("userJoined", { userId: socket.id });
+
+    try {
+      const votes = await Vote.find({ roomCode });
+      const voteMap = {};
+      const userVotedTrackIds = [];
+
+      votes.forEach((v) => {
+        voteMap[v.trackId] = v.count;
+        if (v.votedBy.includes(userId)) {
+          userVotedTrackIds.push(v.trackId);
+        }
+      });
+
+      socket.emit("initialVotes", voteMap);
+      socket.emit("votedTracks", userVotedTrackIds);
+    } catch (err) {
+      console.error("Join room error:", err);
+    }
   });
-  socket.on("voteTrack", ({ roomCode, trackId }) => {
-    console.log(`${socket.id} voted for ${trackId} in room ${roomCode}`);
-    io.to(roomCode).emit("trackVoted", { trackId });
+
+  socket.on("voteTrack", async ({ roomCode, trackId, userId }) => {
+    try {
+      let vote = await Vote.findOne({ roomCode, trackId });
+
+      if (!vote) {
+        vote = new Vote({
+          roomCode,
+          trackId,
+          count: 1,
+          votedBy: [userId],
+        });
+      } else {
+        if (vote.votedBy.includes(userId)) return;
+
+        vote.count += 1;
+        vote.votedBy.push(userId);
+      }
+
+      await vote.save();
+
+      io.to(roomCode).emit("trackVoted", {
+        trackId,
+        count: vote.count,
+      });
+    } catch (err) {
+      console.error("Vote error:", err);
+    }
+  });
+
+  socket.on("getVotedTracks", async ({ roomCode, userId }, callback) => {
+    try {
+      const votes = await Vote.find({ roomCode, votedBy: userId });
+      const votedTrackIds = votes.map((v) => v.trackId);
+      callback(votedTrackIds);
+    } catch (err) {
+      console.error("getVotedTracks error:", err);
+      callback([]);
+    }
   });
 
   socket.on("disconnect", () => {
@@ -119,5 +191,5 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
