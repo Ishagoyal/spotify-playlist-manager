@@ -1,13 +1,12 @@
 import { useState } from "react";
 import React from "react";
 import { SpotifyTrack } from "../type";
+import { useSearch } from "../context/SearchContext";
 
-interface SearchBarProps {
-  setSearchResults: React.Dispatch<React.SetStateAction<SpotifyTrack[]>>;
-}
-
-const SearchBar = ({ setSearchResults }: SearchBarProps) => {
+const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { setSearchResults } = useSearch();
 
   const searchTracks = async () => {
     if (!searchQuery.trim()) return;
