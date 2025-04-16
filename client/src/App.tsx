@@ -228,30 +228,37 @@ function App() {
                       <p className="text-sm text-zinc-400">
                         by {track.artists}
                       </p>
-                      <button
-                        onClick={() => voteTrack(track.id)}
-                        disabled={hasVoted}
-                        className={`mt-3 w-full py-2 text-white rounded-full transition ${
-                          hasVoted
-                            ? "bg-zinc-600 cursor-not-allowed"
-                            : "bg-green-500 hover:bg-green-600"
-                        }`}
-                      >
-                        {hasVoted ? "✓ Voted" : "Vote 🎧"}
-                      </button>
-                      <a
-                        href={track.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-green-400 hover:underline mt-2 text-sm"
-                      >
-                        Open on Spotify 🔗
-                      </a>
-                      {votes[track.id] !== undefined && (
-                        <p className="text-sm mt-2 font-medium">
-                          {votes[track.id]} vote{votes[track.id] > 1 ? "s" : ""}
-                        </p>
-                      )}
+                      <div className="track-actions flex flex-col gap-2 mt-4">
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => voteTrack(track.id)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 shadow-sm  ${
+                              hasVoted
+                                ? "bg-green-500 text-white cursor-not-allowed"
+                                : "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                            }`}
+                            disabled={hasVoted}
+                          >
+                            {hasVoted ? "✓ Voted" : "Vote 🎧"}
+                          </button>
+
+                          <a
+                            href={track.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            Open on Spotify 🔗
+                          </a>
+                        </div>
+
+                        {votes[track.id] !== undefined && (
+                          <p className="text-sm font-semibold text-right text-gray-800 bg-gray-100 px-3 py-1 rounded-full inline-block w-fit self-end shadow-sm">
+                            {votes[track.id]} vote
+                            {votes[track.id] > 1 ? "s" : ""}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
