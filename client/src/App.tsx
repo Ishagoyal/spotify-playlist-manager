@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import SearchBar from "./components/SearchBar";
+import { SpotifyTrack } from "./type";
 
 interface ServerToClientEvents {
   userJoined: (data: { userId: string }) => void;
@@ -22,14 +24,6 @@ interface ClientToServerEvents {
     callback: (votedTrackIds: string[]) => void
   ) => void;
   leaveRoom: (data: { roomCode: string }) => void;
-}
-
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: string;
-  image: string;
-  url: string;
 }
 
 function App() {
@@ -145,24 +139,6 @@ function App() {
     setVotedTracks((prev) => new Set(prev).add(trackId));
   };
 
-  const searchTracks = async () => {
-    if (!searchQuery.trim()) return;
-
-    const token = localStorage.getItem("spotify_token");
-    const res = await fetch(`http://localhost:3001/search?q=${searchQuery}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!res.ok) {
-      alert("Your Spotify session has expired. Please log in again.");
-      window.location.href = "http://localhost:3001/login";
-      return;
-    }
-
-    const data = await res.json();
-    setSearchResults(data.tracks);
-  };
-
   const exitRoom = () => {
     const socket = socketRef.current;
     if (socket && roomCode) {
@@ -220,26 +196,7 @@ function App() {
             </button>
           </div>
 
-          <div className="bg-zinc-800 p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-2">
-              🔎 Search Spotify Tracks
-            </h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Search for a track..."
-                className="flex-1 p-3 rounded-lg bg-zinc-700 text-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button
-                onClick={searchTracks}
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
-              >
-                Search
-              </button>
-            </div>
-          </div>
+          <SearchBar setSearchResults={setSearchResults} />
 
           {searchResults.length > 0 && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
