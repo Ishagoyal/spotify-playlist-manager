@@ -184,6 +184,11 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("leaveRoom", ({ roomCode }) => {
+    socket.leave(roomCode);
+    console.log(`User left room: ${roomCode}`);
+  });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });

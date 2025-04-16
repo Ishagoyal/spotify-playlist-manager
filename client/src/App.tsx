@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ServerToClientEvents {
   userJoined: (data: { userId: string }) => void;
@@ -20,6 +21,7 @@ interface ClientToServerEvents {
     data: { roomCode: string; userId: string },
     callback: (votedTrackIds: string[]) => void
   ) => void;
+  leaveRoom: (data: { roomCode: string }) => void;
 }
 
 interface SpotifyTrack {
@@ -37,6 +39,8 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
   const [votedTracks, setVotedTracks] = useState<Set<string>>(new Set());
+
+  const navigate = useNavigate();
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -159,6 +163,25 @@ function App() {
     setSearchResults(data.tracks);
   };
 
+  const exitRoom = () => {
+    const socket = socketRef.current;
+    if (socket && roomCode) {
+      socket.emit("leaveRoom", { roomCode });
+    }
+
+    setJoined(false);
+    setRoomCode("");
+    setVotes({});
+    setSearchResults([]);
+    setVotedTracks(new Set());
+    localStorage.removeItem("room_code");
+
+    // Redirect to home page after 500ms
+    setTimeout(() => {
+      navigate("/");
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-900 text-white p-6">
       <h1 className="text-4xl font-bold text-center mb-8 text-red">
@@ -184,9 +207,18 @@ function App() {
         </div>
       ) : (
         <div className="space-y-6">
-          <h2 className="text-2xl font-semibold">
-            Room: <span className="text-green-400">{roomCode}</span>
-          </h2>
+          <div className="flex justify-between">
+            <h2 className="text-2xl font-semibold">
+              Room: <span className="text-green-400">{roomCode}</span>
+            </h2>
+
+            <button
+              onClick={exitRoom}
+              className="ml-auto px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
+            >
+              Exit Room
+            </button>
+          </div>
 
           <div className="bg-zinc-800 p-6 rounded-xl">
             <h3 className="text-lg font-semibold mb-2">
