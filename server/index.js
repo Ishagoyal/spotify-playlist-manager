@@ -219,6 +219,7 @@ io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
   socket.on("joinRoom", async ({ roomCode, userId }) => {
+    console.log(`User ${userId} joined room ${roomCode}`);
     socket.join(roomCode);
 
     try {
