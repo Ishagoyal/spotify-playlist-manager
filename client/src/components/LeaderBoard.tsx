@@ -21,8 +21,6 @@ const Leaderboard = () => {
         )
       );
 
-      console.log(responses);
-
       const fullResponse = responses.map((data, i) => ({
         ...data.track,
         count: leaderboard[i].count,
@@ -34,9 +32,57 @@ const Leaderboard = () => {
     fetchTrackDetails();
   }, [leaderboard]);
 
+  const handleCreatePlaylist = async () => {
+    const token = localStorage.getItem("spotify_token");
+    const userId = localStorage.getItem("spotify_user_id");
+    const name = prompt(
+      "Enter a name for your playlist:",
+      "My Collab Playlist"
+    );
+
+    if (!name || !token || !userId) return;
+
+    const trackIds = leaderboard.map((entry) => entry.trackId);
+
+    try {
+      const res = await fetch("http://localhost:3001/create-playlist", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          name,
+          trackIds,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.playlistId) {
+        window.open(
+          `https://open.spotify.com/playlist/${data.playlistId}`,
+          "_blank"
+        );
+      } else {
+        alert("Something went wrong creating the playlist.");
+      }
+    } catch (err) {
+      console.error("Error creating playlist:", err);
+      alert("Failed to create playlist.");
+    }
+  };
+
   return (
     <div className="bg-zinc-800 p-4 rounded-xl shadow-md">
       <h3 className="text-xl font-semibold mb-4">🏆 Leaderboard</h3>
+      <button
+        onClick={handleCreatePlaylist}
+        className="my-6 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium cursor-pointer"
+      >
+        ➕ Create Spotify Playlist
+      </button>
       <ul className="space-y-3">
         {tracks.map((track, idx) => (
           <li key={track.id} className="flex items-center gap-3">
