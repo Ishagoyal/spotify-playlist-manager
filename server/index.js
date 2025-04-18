@@ -10,8 +10,15 @@ const Vote = require("./models/Vote"); // ✅ Make sure Vote schema includes roo
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "https://spotify-playlist-manager-pearl.vercel.app",
+    ],
+    methods: ["GET", "POST"],
+  },
 });
 
 app.use(cors());
