@@ -1,4 +1,3 @@
-import React from "react";
 import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
 
@@ -19,17 +18,25 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
         socket.emit("joinRoom", { roomCode, userId });
         setRoomJoined(true);
         localStorage.setItem("room_code", roomCode);
-        socket.emit("getVotedTracks", { roomCode, userId }, (votedTrackIds) => {
-          setVotedTracks(new Set(votedTrackIds));
-        });
+        socket.emit(
+          "getVotedTracks",
+          { roomCode, userId },
+          (votedTrackIds: string[]) => {
+            setVotedTracks(new Set(votedTrackIds));
+          }
+        );
       });
     } else {
       socket.emit("joinRoom", { roomCode, userId });
       setRoomJoined(true);
       localStorage.setItem("room_code", roomCode);
-      socket.emit("getVotedTracks", { roomCode, userId }, (votedTrackIds) => {
-        setVotedTracks(new Set(votedTrackIds));
-      });
+      socket.emit(
+        "getVotedTracks",
+        { roomCode, userId },
+        (votedTrackIds: string[]) => {
+          setVotedTracks(new Set(votedTrackIds));
+        }
+      );
     }
   };
 

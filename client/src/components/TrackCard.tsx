@@ -1,4 +1,3 @@
-import React from "react";
 import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
 import { SpotifyTrack } from "../type";
@@ -11,7 +10,7 @@ interface TrackCardProps {
 
 const TrackCard = ({ track, socket, hasVotes }: TrackCardProps) => {
   const { roomCode } = useRoom();
-  const { votes, setVotes, votedTracks, setVotedTracks } = useVote();
+  const { votes, votedTracks, setVotedTracks } = useVote();
 
   const voteTrack = (trackId: string) => {
     const userId = localStorage.getItem("spotify_user_id");
