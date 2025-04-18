@@ -1,4 +1,3 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import { useLeaderBoard } from "../context/LeaderBoardContext";
 import { SpotifyTrack } from "../type";

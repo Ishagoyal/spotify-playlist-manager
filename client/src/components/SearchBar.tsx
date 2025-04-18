@@ -1,6 +1,4 @@
 import { useState } from "react";
-import React from "react";
-import { SpotifyTrack } from "../type";
 import { useSearch } from "../context/SearchContext";
 
 const SearchBar = () => {

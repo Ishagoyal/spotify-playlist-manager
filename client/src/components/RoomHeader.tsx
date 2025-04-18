@@ -1,5 +1,3 @@
-import { useState } from "react";
-import React from "react";
 import { useRoom } from "../context/RoomContext";
 import { useNavigate } from "react-router-dom";
 import { useVote } from "../context/VoteContext";
