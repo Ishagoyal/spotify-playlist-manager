@@ -7,6 +7,8 @@ const Leaderboard = () => {
   const { leaderboard } = useLeaderBoard();
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
   useEffect(() => {
     const token = localStorage.getItem("spotify_token");
 
@@ -15,7 +17,7 @@ const Leaderboard = () => {
 
       const responses = await Promise.all(
         leaderboard.map((item) =>
-          fetch(`http://localhost:3001/leaderboard?track=${item.trackId}`, {
+          fetch(`${backendUrl}/leaderboard?track=${item.trackId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }).then((res) => res.json())
         )
@@ -45,7 +47,7 @@ const Leaderboard = () => {
     const trackIds = leaderboard.map((entry) => entry.trackId);
 
     try {
-      const res = await fetch("http://localhost:3001/create-playlist", {
+      const res = await fetch(`${backendUrl}/create-playlist`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

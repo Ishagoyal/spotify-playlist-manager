@@ -8,17 +8,19 @@ const SearchBar = () => {
 
   const { setSearchResults } = useSearch();
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
   const searchTracks = async () => {
     if (!searchQuery.trim()) return;
 
     const token = localStorage.getItem("spotify_token");
-    const res = await fetch(`http://localhost:3001/search?q=${searchQuery}`, {
+    const res = await fetch(`${backendUrl}/search?q=${searchQuery}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
       alert("Your Spotify session has expired. Please log in again.");
-      window.location.href = "http://localhost:3001/login";
+      window.location.href = `${backendUrl}/login`;
       return;
     }
 

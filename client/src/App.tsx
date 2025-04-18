@@ -18,13 +18,15 @@ function App() {
   const { votes, setVotes, votedTracks, setVotedTracks } = useVote();
   const { setLeaderboard } = useLeaderBoard();
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
   const socketRef = useRef<Socket<
     ServerToClientEvents,
     ClientToServerEvents
   > | null>(null);
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3001");
+    socketRef.current = io(`${backendUrl}`);
 
     socketRef.current.on("connect", () => {
       console.log("Connected to server with ID:", socketRef.current?.id);
