@@ -11,6 +11,13 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
 
   const joinRoom = () => {
     const userId = localStorage.getItem("spotify_user_id");
+    console.log(
+      "Emitting joinRoom with roomCode:",
+      roomCode,
+      "userId:",
+      userId
+    ); // Log this
+
     if (!roomCode.trim() || !socket || !userId) return;
 
     // Ensure socket is connected before emitting events
