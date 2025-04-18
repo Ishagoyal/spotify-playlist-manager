@@ -13,8 +13,10 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
     const userId = localStorage.getItem("spotify_user_id");
     if (!roomCode.trim() || !socket || !userId) return;
 
+    // Ensure socket is connected before emitting events
     if (!socket.connected) {
       socket.once("connect", () => {
+        console.log("Socket connected, joining room...");
         socket.emit("joinRoom", { roomCode, userId });
         setRoomJoined(true);
         localStorage.setItem("room_code", roomCode);
@@ -27,6 +29,7 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
         );
       });
     } else {
+      console.log("Socket already connected, joining room...");
       socket.emit("joinRoom", { roomCode, userId });
       setRoomJoined(true);
       localStorage.setItem("room_code", roomCode);
