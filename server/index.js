@@ -76,9 +76,13 @@ app.get("/callback", async (req, res) => {
 
     // Now you have access to user's Spotify ID
     const spotifyUserId = userProfile.data.id;
+    const redirectBase =
+      process.env.NODE_ENV === "production"
+        ? `${process.env.FRONTEND_URL}`
+        : "http://localhost:5173";
 
     res.redirect(
-      `http://localhost:5173/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
+      `${redirectBase}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
     );
   } catch (err) {
     console.error("Token exchange error:", err.response?.data || err);
