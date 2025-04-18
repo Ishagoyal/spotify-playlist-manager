@@ -118,6 +118,37 @@ app.get("/search", async (req, res) => {
   }
 });
 
+app.get("/leaderboard", async (req, res) => {
+  const trackId = req.query.track;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  try {
+    const response = await axios.get(
+      `https://api.spotify.com/v1/tracks/${trackId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const track = response.data;
+
+    const formattedTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists.map((a) => a.name).join(", "),
+      image: track.album.images?.[0]?.url || "",
+      url: track.external_urls.spotify,
+    };
+
+    res.json({ track: formattedTrack });
+  } catch (err) {
+    console.error("Spotify search error:", err.response?.data || err);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 // ======== SOCKET.IO ========
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
@@ -139,6 +170,17 @@ io.on("connection", (socket) => {
 
       socket.emit("initialVotes", voteMap);
       socket.emit("votedTracks", userVotedTrackIds);
+
+      const leaderboard = await Vote.find({ roomCode })
+        .sort({ count: -1 })
+        .limit(10);
+      socket.emit(
+        "leaderboardUpdate",
+        leaderboard.map((v) => ({
+          trackId: v.trackId,
+          count: v.count,
+        }))
+      );
     } catch (err) {
       console.error("Join room error:", err);
     }
@@ -168,6 +210,17 @@ io.on("connection", (socket) => {
         trackId,
         count: vote.count,
       });
+
+      const leaderboard = await Vote.find({ roomCode })
+        .sort({ count: -1 })
+        .limit(10);
+      io.to(roomCode).emit(
+        "leaderboardUpdate",
+        leaderboard.map((v) => ({
+          trackId: v.trackId,
+          count: v.count,
+        }))
+      );
     } catch (err) {
       console.error("Vote error:", err);
     }

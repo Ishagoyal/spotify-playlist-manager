@@ -9,11 +9,14 @@ import { useVote } from "./context/VoteContext";
 import JoinRoom from "./components/JoinRoom";
 import TrackCard from "./components/TrackCard";
 import { ClientToServerEvents, ServerToClientEvents } from "./type";
+import Leaderboard from "./components/LeaderBoard";
+import { useLeaderBoard } from "./context/LeaderBoardContext";
 
 function App() {
   const { searchResults } = useSearch();
   const { setRoomCode, setRoomJoined, roomJoined } = useRoom();
   const { votes, setVotes, votedTracks, setVotedTracks } = useVote();
+  const { setLeaderboard } = useLeaderBoard();
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -41,6 +44,10 @@ function App() {
 
     socketRef.current.on("votedTracks", (trackIds) => {
       setVotedTracks(new Set(trackIds));
+    });
+
+    socketRef.current.on("leaderboardUpdate", (data) => {
+      setLeaderboard(data);
     });
 
     return () => {
@@ -91,23 +98,27 @@ function App() {
       {!roomJoined ? (
         <JoinRoom socket={socketRef.current} />
       ) : (
-        <div className="space-y-6">
-          <RoomHeader socket={socketRef.current} />
-          <SearchBar />
-          {searchResults.length > 0 && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {searchResults.map((track) => {
-                const hasVotes = votedTracks.has(track.id);
-                return (
-                  <TrackCard
-                    track={track}
-                    socket={socketRef.current}
-                    hasVotes={hasVotes}
-                  />
-                );
-              })}
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-6">
+          <div>
+            <RoomHeader socket={socketRef.current} />
+            <SearchBar />
+            {searchResults.length > 0 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {searchResults.map((track) => {
+                  const hasVotes = votedTracks.has(track.id);
+                  return (
+                    <TrackCard
+                      key={track.id}
+                      track={track}
+                      socket={socketRef.current}
+                      hasVotes={hasVotes}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <Leaderboard />
         </div>
       )}
     </div>

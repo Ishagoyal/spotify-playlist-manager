@@ -12,7 +12,7 @@ interface RoomHeaderProps {
 const RoomHeader = ({ socket }: RoomHeaderProps) => {
   const { setRoomCode, roomCode, setRoomJoined } = useRoom();
   const { setSearchResults } = useSearch();
-  const { votes, setVotes, setVotedTracks } = useVote();
+  const { setVotes, setVotedTracks } = useVote();
 
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ const RoomHeader = ({ socket }: RoomHeaderProps) => {
   };
 
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between my-2">
       <h2 className="text-2xl font-semibold">
         Room: <span className="text-green-400">{roomCode}</span>
       </h2>
