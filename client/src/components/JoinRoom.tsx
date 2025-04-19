@@ -1,5 +1,6 @@
 import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
+import { motion } from "framer-motion";
 
 interface JoinRoomProps {
   socket: any;
@@ -11,32 +12,9 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
 
   const joinRoom = () => {
     const userId = localStorage.getItem("spotify_user_id");
-    console.log(
-      "Emitting joinRoom with roomCode:",
-      roomCode,
-      "userId:",
-      userId
-    ); // Log this
-
     if (!roomCode.trim() || !socket || !userId) return;
 
-    // Ensure socket is connected before emitting events
-    if (!socket.connected) {
-      socket.once("connect", () => {
-        console.log("Socket connected, joining room...");
-        socket.emit("joinRoom", { roomCode, userId });
-        setRoomJoined(true);
-        localStorage.setItem("room_code", roomCode);
-        socket.emit(
-          "getVotedTracks",
-          { roomCode, userId },
-          (votedTrackIds: string[]) => {
-            setVotedTracks(new Set(votedTrackIds));
-          }
-        );
-      });
-    } else {
-      console.log("Socket already connected, joining room...");
+    const join = () => {
       socket.emit("joinRoom", { roomCode, userId });
       setRoomJoined(true);
       localStorage.setItem("room_code", roomCode);
@@ -47,26 +25,38 @@ const JoinRoom = ({ socket }: JoinRoomProps) => {
           setVotedTracks(new Set(votedTrackIds));
         }
       );
-    }
+    };
+
+    socket.connected ? join() : socket.once("connect", join);
   };
 
   return (
-    <div className="max-w-md mx-auto bg-zinc-800 p-6 rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-4">Join a Room</h2>
-      <input
-        type="text"
-        placeholder="Enter Room Code"
-        className="w-full p-3 rounded-lg bg-zinc-700 text-white mb-4"
-        value={roomCode}
-        onChange={(e) => setRoomCode(e.target.value)}
-      />
-      <button
-        onClick={joinRoom}
-        className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-full"
-      >
-        Join
-      </button>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-zinc-900 to-black px-4"
+    >
+      <div className="w-full max-w-md bg-zinc-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-zinc-700">
+        <h2 className="text-2xl font-bold text-center mb-6 text-white">
+          🔐 Join a Room
+        </h2>
+
+        <input
+          type="text"
+          placeholder="Enter Room Code"
+          value={roomCode}
+          onChange={(e) => setRoomCode(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl bg-zinc-700 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 mb-6"
+        />
+
+        <button
+          onClick={joinRoom}
+          className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition-colors duration-200"
+        >
+          Join Room
+        </button>
+      </div>
+    </motion.div>
   );
 };
 
