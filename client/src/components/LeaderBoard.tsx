@@ -76,7 +76,7 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="bg-zinc-800 p-4 rounded-xl shadow-md">
+    <div className="bg-zinc-800 p-4 rounded-xl shadow-md max-w-lg mx-auto">
       <h3 className="text-xl font-semibold mb-4">🏆 Leaderboard</h3>
       <button
         onClick={handleCreatePlaylist}
@@ -87,19 +87,27 @@ const Leaderboard = () => {
       <ul className="space-y-3">
         {tracks.map((track, idx) => (
           <li key={track.id} className="flex items-center gap-3">
-            <span className="text-lg font-bold w-6 text-right">{idx + 1}</span>
+            <span className="text-base font-semibold w-6 text-right">
+              {idx + 1}
+            </span>
             <img
               src={track.image}
               alt={track.name}
               className="w-10 h-10 rounded"
             />
-            <div className="flex-1">
-              <p className="font-medium">{track.name}</p>
-              <p className="text-sm text-zinc-400">{track.artists}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate max-w-[120px]">
+                {track.name}
+              </p>
+              <p className="text-xs text-zinc-400 truncate max-w-[120px]">
+                {track.artists}
+              </p>
             </div>
-            <span className="text-green-400 font-bold">
-              {track.count} votes
-            </span>
+            {(track.count ?? 0) > 0 && (
+              <span className="text-green-400 font-semibold text-sm min-w-[65px] text-right">
+                {track.count ?? 0} vote{(track.count ?? 0) !== 1 ? "s" : ""}
+              </span>
+            )}
           </li>
         ))}
       </ul>

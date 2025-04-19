@@ -111,20 +111,31 @@ function App() {
   }, [spotifyUserId]);
 
   return (
-    <>
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-start p-6">
       {!accessToken ? (
-        <Login />
+        <div className="flex flex-col items-center justify-center h-full w-full max-w-lg mt-24">
+          <Login />
+        </div>
       ) : !roomJoined ? (
-        <JoinRoom socket={socketRef.current} />
+        <div className="flex flex-col items-center justify-center h-full w-full max-w-lg mt-24">
+          <JoinRoom socket={socketRef.current} />
+        </div>
       ) : (
-        <div className="min-h-screen bg-zinc-900 text-white p-6">
-          <h1 className="text-4xl font-bold text-center mb-8 text-red">
+        <div className="w-full max-w-7xl">
+          <h1 className="text-4xl font-extrabold text-center text-green-400 mb-10 tracking-tight">
             🎵 Collaborative Playlist Room
           </h1>
-          <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-8">
             <div>
-              <RoomHeader socket={socketRef.current} />
-              <SearchBar />
+              <div className="bg-zinc-800 p-4 rounded-2xl shadow-lg mb-6">
+                <RoomHeader socket={socketRef.current} />
+              </div>
+
+              <div className="bg-zinc-800 p-4 rounded-2xl shadow-lg mb-6">
+                <SearchBar />
+              </div>
+
               {searchResults.length > 0 && (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {searchResults.map((track) => {
@@ -141,11 +152,14 @@ function App() {
                 </div>
               )}
             </div>
-            <Leaderboard />
+
+            <div className="bg-zinc-800 p-4 rounded-2xl shadow-lg h-fit sticky top-8">
+              <Leaderboard />
+            </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
