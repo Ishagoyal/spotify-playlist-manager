@@ -27,7 +27,7 @@ function App() {
   const [accessToken, setAccessToken] = useState<string | null>(
     localStorage.getItem("spotify_token")
   );
-  const [refreshToken, setRefreshToken] = useState<string | null>(
+  const [_refreshToken, setRefreshToken] = useState<string | null>(
     localStorage.getItem("spotify_refresh_token")
   );
   const [spotifyUserId, setSpotifyUserId] = useState<string | null>(
