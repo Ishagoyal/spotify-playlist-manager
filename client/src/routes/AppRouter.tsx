@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AuthSuccess from "./AuthSuccess";
+import AuthSuccess from "../pages/AuthSuccess";
 import App from "../App";
 
 const AppRouter = () => (
