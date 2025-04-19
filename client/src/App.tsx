@@ -10,6 +10,7 @@ import TrackCard from "./components/TrackCard";
 import { ClientToServerEvents, ServerToClientEvents } from "./type";
 import Leaderboard from "./components/LeaderBoard";
 import { useLeaderBoard } from "./context/LeaderBoardContext";
+import Login from "./components/Login";
 
 function App() {
   const { searchResults } = useSearch();
@@ -18,6 +19,8 @@ function App() {
   const { setLeaderboard } = useLeaderBoard();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const query = new URLSearchParams(window.location.search);
+  const accessToken = query.get("access_token");
 
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -57,8 +60,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    const accessToken = query.get("access_token");
     const refreshToken = query.get("refresh_token");
     const spotifyUserId = query.get("spotify_user_id");
 
@@ -91,38 +92,41 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white p-6">
-      <h1 className="text-4xl font-bold text-center mb-8 text-red">
-        🎵 Collaborative Playlist Room
-      </h1>
-
-      {!roomJoined ? (
+    <>
+      {!accessToken ? (
+        <Login />
+      ) : !roomJoined ? (
         <JoinRoom socket={socketRef.current} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-6">
-          <div>
-            <RoomHeader socket={socketRef.current} />
-            <SearchBar />
-            {searchResults.length > 0 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {searchResults.map((track) => {
-                  const hasVotes = votedTracks.has(track.id);
-                  return (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      socket={socketRef.current}
-                      hasVotes={hasVotes}
-                    />
-                  );
-                })}
-              </div>
-            )}
+        <div className="min-h-screen bg-zinc-900 text-white p-6">
+          <h1 className="text-4xl font-bold text-center mb-8 text-red">
+            🎵 Collaborative Playlist Room
+          </h1>
+          <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-6">
+            <div>
+              <RoomHeader socket={socketRef.current} />
+              <SearchBar />
+              {searchResults.length > 0 && (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {searchResults.map((track) => {
+                    const hasVotes = votedTracks.has(track.id);
+                    return (
+                      <TrackCard
+                        key={track.id}
+                        track={track}
+                        socket={socketRef.current}
+                        hasVotes={hasVotes}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <Leaderboard />
           </div>
-          <Leaderboard />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
