@@ -1,4 +1,9 @@
-require("dotenv").config();
+require("dotenv").config({
+  path:
+    process.env.NODE_ENV === "production"
+      ? ".env.production"
+      : ".env.development",
+});
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -18,10 +23,19 @@ const io = new Server(server, {
       "https://spotify-playlist-manager-pearl.vercel.app",
     ],
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://spotify-playlist-manager-pearl.vercel.app",
+    ],
+    credentials: true, // ✅ Match this too
+  })
+);
 app.use(express.json());
 
 const client_id = process.env.SPOTIFY_CLIENT_ID;
@@ -83,7 +97,12 @@ app.get("/callback", async (req, res) => {
 
     // Now you have access to user's Spotify ID
     const spotifyUserId = userProfile.data.id;
-    const redirectUri = process.env.FRONTEND_URL || "http://localhost:5173";
+
+    const redirectUri = process.env.FRONTEND_URL;
+    console.log(
+      "🔁 Redirecting to:",
+      `${redirectUri}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
+    );
 
     res.redirect(
       `${redirectUri}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`

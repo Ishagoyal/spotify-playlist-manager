@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import SearchBar from "./components/SearchBar";
 import RoomHeader from "./components/RoomHeader";
@@ -19,77 +19,96 @@ function App() {
   const { setLeaderboard } = useLeaderBoard();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const query = new URLSearchParams(window.location.search);
-  const accessToken = query.get("access_token");
-
   const socketRef = useRef<Socket<
     ServerToClientEvents,
     ClientToServerEvents
   > | null>(null);
 
+  const [accessToken, setAccessToken] = useState<string | null>(
+    localStorage.getItem("spotify_token")
+  );
+  const [refreshToken, setRefreshToken] = useState<string | null>(
+    localStorage.getItem("spotify_refresh_token")
+  );
+  const [spotifyUserId, setSpotifyUserId] = useState<string | null>(
+    localStorage.getItem("spotify_user_id")
+  );
+
   useEffect(() => {
-    socketRef.current = io(`${backendUrl}`);
+    // Read tokens from URL only if they're not already in localStorage
+    const query = new URLSearchParams(window.location.search);
+    const newAccessToken = query.get("access_token");
+    const newRefreshToken = query.get("refresh_token");
+    const newSpotifyUserId = query.get("spotify_user_id");
 
-    socketRef.current.on("connect", () => {
-      console.log("Connected to server with ID:", socketRef.current?.id);
-    });
-
-    socketRef.current.on("userJoined", (data) => {
-      console.log("Another user joined:", data.userId);
-    });
-
-    socketRef.current.on("trackVoted", (data) => {
-      setVotes({ ...votes, [data.trackId]: data.count });
-    });
-
-    socketRef.current.on("initialVotes", (voteMap) => {
-      setVotes(voteMap);
-    });
-
-    socketRef.current.on("votedTracks", (trackIds) => {
-      setVotedTracks(new Set(trackIds));
-    });
-
-    socketRef.current.on("leaderboardUpdate", (data) => {
-      setLeaderboard(data);
-    });
-
-    return () => {
-      socketRef.current?.disconnect();
-    };
+    if (newAccessToken) {
+      localStorage.setItem("spotify_token", newAccessToken);
+      setAccessToken(newAccessToken);
+    }
+    if (newRefreshToken) {
+      localStorage.setItem("spotify_refresh_token", newRefreshToken);
+      setRefreshToken(newRefreshToken);
+    }
+    if (newSpotifyUserId) {
+      localStorage.setItem("spotify_user_id", newSpotifyUserId);
+      setSpotifyUserId(newSpotifyUserId);
+    }
   }, []);
 
   useEffect(() => {
-    const refreshToken = query.get("refresh_token");
-    const spotifyUserId = query.get("spotify_user_id");
+    if (accessToken) {
+      socketRef.current = io(`${backendUrl}`, { withCredentials: true });
 
-    if (accessToken) localStorage.setItem("spotify_token", accessToken);
-    if (refreshToken)
-      localStorage.setItem("spotify_refresh_token", refreshToken);
-    if (spotifyUserId) localStorage.setItem("spotify_user_id", spotifyUserId);
-  }, []);
+      socketRef.current.on("connect", () => {
+        console.log("Connected to server with ID:", socketRef.current?.id);
+      });
+
+      socketRef.current.on("userJoined", (data) => {
+        console.log("Another user joined:", data.userId);
+      });
+
+      socketRef.current.on("trackVoted", (data) => {
+        setVotes({ ...votes, [data.trackId]: data.count });
+      });
+
+      socketRef.current.on("initialVotes", (voteMap) => {
+        setVotes(voteMap);
+      });
+
+      socketRef.current.on("votedTracks", (trackIds) => {
+        setVotedTracks(new Set(trackIds));
+      });
+
+      socketRef.current.on("leaderboardUpdate", (data) => {
+        setLeaderboard(data);
+      });
+
+      return () => {
+        socketRef.current?.disconnect();
+      };
+    }
+  }, [accessToken]); // Triggered when accessToken changes
 
   useEffect(() => {
     const savedRoom = localStorage.getItem("room_code");
-    const userId = localStorage.getItem("spotify_user_id");
     const socket = socketRef.current;
 
-    if (savedRoom && socket && userId) {
+    if (savedRoom && socket && spotifyUserId) {
       socket.once("connect", () => {
         setRoomCode(savedRoom);
         setRoomJoined(true);
 
-        socket.emit("joinRoom", { roomCode: savedRoom, userId });
+        socket.emit("joinRoom", { roomCode: savedRoom, userId: spotifyUserId });
         socket.emit(
           "getVotedTracks",
-          { roomCode: savedRoom, userId },
+          { roomCode: savedRoom, userId: spotifyUserId },
           (votedTrackIds) => {
             setVotedTracks(new Set(votedTrackIds));
           }
         );
       });
     }
-  }, []);
+  }, [spotifyUserId]);
 
   return (
     <>
