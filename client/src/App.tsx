@@ -11,6 +11,7 @@ import { ClientToServerEvents, ServerToClientEvents } from "./type";
 import Leaderboard from "./components/LeaderBoard";
 import { useLeaderBoard } from "./context/LeaderBoardContext";
 import Login from "./components/Login";
+import LogoutButton from "./components/Logout";
 
 function App() {
   const { searchResults } = useSearch();
@@ -112,6 +113,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-start p-6">
+      {accessToken && (
+        <div className="w-full flex justify-end md:absolute md:top-4 md:right-4 mb-4 md:mb-0 mt-2">
+          <LogoutButton
+            socket={socketRef.current}
+            setAccessToken={setAccessToken}
+          />
+        </div>
+      )}
       {!accessToken ? (
         <div className="flex flex-col items-center justify-center h-full w-full max-w-lg mt-24">
           <Login />

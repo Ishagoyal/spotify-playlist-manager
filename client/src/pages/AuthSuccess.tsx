@@ -18,9 +18,6 @@ const AuthSuccess: React.FC = () => {
       // Redirect to home or previously stored room
       const savedRoom = localStorage.getItem("room_code");
       navigate(savedRoom ? "/" : "/");
-    } else {
-      console.error("Missing auth data in URL");
-      navigate("/error");
     }
   }, [navigate]);
 
