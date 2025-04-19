@@ -28,20 +28,20 @@ const SearchBar = () => {
 
   return (
     <div className="bg-zinc-800 p-6 rounded-xl">
-      <h3 className="text-lg font-semibold mb-2">🔎 Search Spotify Tracks</h3>
-      <div className="flex gap-2">
+      <h3 className="text-lg font-semibold mb-4">🔎 Search Spotify Tracks</h3>
+      <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           placeholder="Search for a track..."
-          className="flex-1 p-3 rounded-lg bg-zinc-700 text-white"
+          className="flex-1 p-3 rounded-lg bg-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <button
           onClick={searchTracks}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+          className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition"
         >
-          Search
+          🔍 Search
         </button>
       </div>
     </div>
