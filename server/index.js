@@ -68,7 +68,50 @@ app.get("/login", (req, res) => {
       redirect_uri,
     });
 
-  res.redirect(authUrl);
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Spotify Login Warning</title>
+      <style>
+        body {
+          font-family: sans-serif;
+          text-align: center;
+          margin-top: 80px;
+          padding: 0 20px;
+        }
+        h3 {
+          color: #1DB954;
+        }
+        a.button {
+          display: inline-block;
+          margin-top: 30px;
+          padding: 12px 24px;
+          background-color: #1DB954;
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+          font-weight: bold;
+          transition: background-color 0.3s ease;
+        }
+        a.button:hover {
+          background-color: #17a44d;
+        }
+      </style>
+    </head>
+    <body>
+      <h3>Important</h3>
+      <p>
+        Please log in to Spotify using the same method you used to sign up:
+        <strong>email & password</strong>, or a connected account like <strong>Google or Facebook</strong>.
+      </p>
+      <p>If you're using a connected account, make sure that account is linked to your Spotify profile.</p>
+      <a href="${authUrl}" class="button">Continue to Spotify Login</a>
+    </body>
+    </html>
+  `);
 });
 
 app.get("/callback", async (req, res) => {
@@ -95,14 +138,9 @@ app.get("/callback", async (req, res) => {
       },
     });
 
-    // Now you have access to user's Spotify ID
     const spotifyUserId = userProfile.data.id;
 
     const redirectUri = process.env.FRONTEND_URL;
-    console.log(
-      "🔁 Redirecting to:",
-      `${redirectUri}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
-    );
 
     res.redirect(
       `${redirectUri}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
