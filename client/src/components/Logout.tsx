@@ -1,25 +1,20 @@
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/AuthContext";
 
-interface LogoutButtonProps {
-  socket: any;
-  setAccessToken: (accessToken: string | null) => void;
-}
-
-const LogoutButton = ({ socket, setAccessToken }: LogoutButtonProps) => {
+const LogoutButton = () => {
   const navigate = useNavigate();
+  const socket = useSocket();
+  const { logout } = useAuth();
+
   const handleLogout = () => {
     // Clear local storage and disconnect socket
-    localStorage.removeItem("spotify_access_token");
-    localStorage.removeItem("spotify_refresh_token");
-    localStorage.removeItem("spotify_user_id");
-    localStorage.removeItem("room_code");
-
+    logout();
     if (socket?.connected) {
       socket.disconnect();
     }
 
     // Reload the app to reset state
-    setAccessToken(null);
     navigate("/login");
   };
 

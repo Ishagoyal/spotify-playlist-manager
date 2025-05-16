@@ -2,15 +2,13 @@ import { useRoom } from "../context/RoomContext";
 import { useNavigate } from "react-router-dom";
 import { useVote } from "../context/VoteContext";
 import { useSearch } from "../context/SearchContext";
+import { useSocket } from "../context/SocketContext";
 
-interface RoomHeaderProps {
-  socket: any;
-}
-
-const RoomHeader = ({ socket }: RoomHeaderProps) => {
+const RoomHeader = () => {
   const { setRoomCode, roomCode, setRoomJoined } = useRoom();
   const { setSearchResults } = useSearch();
   const { setVotes, setVotedTracks } = useVote();
+  const socket = useSocket();
 
   const navigate = useNavigate();
 

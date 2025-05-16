@@ -1,21 +1,25 @@
+import { useNavigate } from "react-router-dom";
 import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
 import { motion } from "framer-motion";
+import { useSocket } from "../context/SocketContext";
 
-interface JoinRoomProps {
-  socket: any;
-}
-
-const JoinRoom = ({ socket }: JoinRoomProps) => {
+const JoinRoom = () => {
   const { setRoomCode, roomCode, setRoomJoined } = useRoom();
   const { setVotedTracks } = useVote();
+  const navigate = useNavigate();
+  const socket = useSocket();
 
   const joinRoom = () => {
     const userId = localStorage.getItem("spotify_user_id");
+    console.log(userId);
+    console.log(socket);
+    console.log(roomCode);
     if (!roomCode.trim() || !socket || !userId) return;
 
     const join = () => {
       socket.emit("joinRoom", { roomCode, userId });
+      navigate(`/room/${roomCode}`);
       setRoomJoined(true);
       localStorage.setItem("room_code", roomCode);
       socket.emit(

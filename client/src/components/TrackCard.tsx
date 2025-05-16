@@ -1,16 +1,17 @@
 import { useRoom } from "../context/RoomContext";
+import { useSocket } from "../context/SocketContext";
 import { useVote } from "../context/VoteContext";
 import { SpotifyTrack } from "../type";
 
 interface TrackCardProps {
-  socket: any;
   track: SpotifyTrack;
   hasVotes: boolean;
 }
 
-const TrackCard = ({ track, socket, hasVotes }: TrackCardProps) => {
+const TrackCard = ({ track, hasVotes }: TrackCardProps) => {
   const { roomCode } = useRoom();
   const { votes, votedTracks, setVotedTracks } = useVote();
+  const socket = useSocket();
 
   const voteTrack = (trackId: string) => {
     const userId = localStorage.getItem("spotify_user_id");

@@ -33,3 +33,14 @@ export interface LeaderboardEntry {
   trackId: string;
   count: number;
 }
+
+export type AuthData = {
+  accessToken: string;
+  refreshToken: string;
+  spotifyUserId: string;
+};
+
+export type AuthContextType = AuthData & {
+  setAuthData: (data: AuthData) => void;
+  logout: () => void;
+};

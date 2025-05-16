@@ -1,27 +1,32 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const AuthSuccess: React.FC = () => {
+const AuthSuccess = () => {
   const navigate = useNavigate();
+  const { setAuthData } = useAuth();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-    const spotifyUserId = params.get("spotify_user_id");
+    const query = new URLSearchParams(window.location.search);
+    const token = query.get("access_token");
+    const refreshToken = query.get("refresh_token");
+    const userId = query.get("spotify_user_id");
 
-    if (accessToken && refreshToken && spotifyUserId) {
-      localStorage.setItem("spotify_token", accessToken);
-      localStorage.setItem("spotify_refresh_token", refreshToken);
-      localStorage.setItem("spotify_user_id", spotifyUserId);
+    if (token && refreshToken && userId) {
+      setAuthData({
+        accessToken: token,
+        refreshToken: refreshToken,
+        spotifyUserId: userId,
+      });
 
-      // Redirect to home or previously stored room
-      const savedRoom = localStorage.getItem("room_code");
-      navigate(savedRoom ? "/" : "/");
+      window.history.replaceState({}, "", "/join-room");
+      navigate("/join-room");
+    } else {
+      navigate("/login");
     }
-  }, [navigate]);
+  }, []);
 
-  return <p>Logging you in...</p>;
+  return <div>Authenticating with Spotify...</div>;
 };
 
 export default AuthSuccess;
