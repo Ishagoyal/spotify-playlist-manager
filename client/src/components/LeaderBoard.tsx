@@ -1,12 +1,27 @@
 import { useEffect, useState } from "react";
 import { useLeaderBoard } from "../context/LeaderBoardContext";
-import { SpotifyTrack } from "../type";
+import { LeaderboardEntry, SpotifyTrack } from "../type";
+import { useSocket } from "../context/SocketContext";
 
 const Leaderboard = () => {
-  const { leaderboard } = useLeaderBoard();
+  const { leaderboard, setLeaderboard } = useLeaderBoard();
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
-
+  const socket = useSocket();
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = (data: LeaderboardEntry[]) => {
+      setLeaderboard(data);
+    };
+
+    socket.on("leaderboardUpdate", handleUpdate);
+
+    return () => {
+      socket.off("leaderboardUpdate", handleUpdate);
+    };
+  }, [socket]);
 
   useEffect(() => {
     const token = localStorage.getItem("spotify_token");
@@ -78,12 +93,14 @@ const Leaderboard = () => {
   return (
     <div className="bg-zinc-800 p-4 rounded-xl shadow-md max-w-lg mx-auto">
       <h3 className="text-xl font-semibold mb-4">🏆 Leaderboard</h3>
-      <button
-        onClick={handleCreatePlaylist}
-        className="my-6 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium cursor-pointer"
-      >
-        ➕ Create Spotify Playlist
-      </button>
+      {tracks.length > 0 && (
+        <button
+          onClick={handleCreatePlaylist}
+          className="my-6 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium cursor-pointer"
+        >
+          ➕ Create Spotify Playlist
+        </button>
+      )}
       <ul className="space-y-3">
         {tracks.map((track, idx) => (
           <li key={track.id} className="flex items-center gap-3">

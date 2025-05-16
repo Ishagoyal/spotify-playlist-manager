@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
 import { useLeaderBoard } from "../context/LeaderBoardContext";

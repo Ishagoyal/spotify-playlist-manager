@@ -12,9 +12,7 @@ const JoinRoom = () => {
 
   const joinRoom = () => {
     const userId = localStorage.getItem("spotify_user_id");
-    console.log(userId);
-    console.log(socket);
-    console.log(roomCode);
+
     if (!roomCode.trim() || !socket || !userId) return;
 
     const join = () => {
