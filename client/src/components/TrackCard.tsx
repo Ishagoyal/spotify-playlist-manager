@@ -2,6 +2,7 @@ import { useRoom } from "../context/RoomContext";
 import { useSocket } from "../context/SocketContext";
 import { useVote } from "../context/VoteContext";
 import { SpotifyTrack } from "../type";
+import { useAuth } from "../context/AuthContext"; // ✅ new import
 
 interface TrackCardProps {
   track: SpotifyTrack;
@@ -11,14 +12,14 @@ interface TrackCardProps {
 const TrackCard = ({ track, hasVotes }: TrackCardProps) => {
   const { roomCode } = useRoom();
   const { votes, votedTracks, setVotedTracks } = useVote();
+  const { spotifyUserId } = useAuth(); // ✅ use context
   const socket = useSocket();
 
   const voteTrack = (trackId: string) => {
-    const userId = localStorage.getItem("spotify_user_id");
-    if (!roomCode.trim() || !trackId || !socket || !userId) return;
+    if (!roomCode.trim() || !trackId || !socket || !spotifyUserId) return;
     if (votedTracks.has(trackId)) return;
 
-    socket.emit("voteTrack", { roomCode, trackId, userId });
+    socket.emit("voteTrack", { roomCode, trackId, userId: spotifyUserId });
     setVotedTracks(new Set([...votedTracks, trackId]));
   };
 

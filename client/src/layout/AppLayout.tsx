@@ -11,16 +11,17 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { setRoomCode, setRoomJoined } = useRoom();
+  const { roomCode, setRoomJoined } = useRoom();
   const { votes, setVotes, setVotedTracks } = useVote();
   const { setLeaderboard } = useLeaderBoard();
   const socket = useSocket();
-  const { accessToken, spotifyUserId } = useAuth();
+  const { isAuthenticated, spotifyUserId } = useAuth();
 
+  // Set up socket listeners when connected
   useEffect(() => {
-    if (accessToken && socket) {
+    if (isAuthenticated && socket) {
       socket.on("connect", () => {
-        console.log("Connected to server with ID:", socket?.id);
+        console.log("Connected to server with ID:", socket.id);
       });
 
       socket.on("userJoined", (data) => {
@@ -44,33 +45,33 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       });
 
       return () => {
-        socket?.disconnect();
+        socket.disconnect();
       };
     }
-  }, [accessToken]); // Triggered when accessToken changes
+  }, [isAuthenticated]);
 
+  // Join room if roomCode is already set in context
   useEffect(() => {
-    const savedRoom = localStorage.getItem("room_code");
-
-    if (savedRoom && socket && spotifyUserId) {
+    if (roomCode && socket && spotifyUserId) {
       socket.once("connect", () => {
-        setRoomCode(savedRoom);
         setRoomJoined(true);
 
-        socket.emit("joinRoom", { roomCode: savedRoom, userId: spotifyUserId });
+        socket.emit("joinRoom", { roomCode, userId: spotifyUserId });
+
         socket.emit(
           "getVotedTracks",
-          { roomCode: savedRoom, userId: spotifyUserId },
+          { roomCode, userId: spotifyUserId },
           (votedTrackIds) => {
             setVotedTracks(new Set(votedTrackIds));
           }
         );
       });
     }
-  }, [spotifyUserId]);
+  }, [roomCode, spotifyUserId]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-start p-6">
-      {accessToken && socket && (
+      {isAuthenticated && socket && (
         <div className="w-full flex justify-end md:absolute md:top-4 md:right-4 mb-4 md:mb-0 mt-2">
           <LogoutButton />
         </div>

@@ -3,18 +3,18 @@ import { useSearch } from "../context/SearchContext";
 
 const SearchBar = () => {
   const [searchQuery, setSearchQuery] = useState("");
-
   const { setSearchResults } = useSearch();
-
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const searchTracks = async () => {
     if (!searchQuery.trim()) return;
 
-    const token = localStorage.getItem("spotify_token");
-    const res = await fetch(`${backendUrl}/search?q=${searchQuery}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(
+      `${backendUrl}/search?q=${encodeURIComponent(searchQuery)}`,
+      {
+        credentials: "include", // sends cookies!
+      }
+    );
 
     if (!res.ok) {
       alert("Your Spotify session has expired. Please log in again.");

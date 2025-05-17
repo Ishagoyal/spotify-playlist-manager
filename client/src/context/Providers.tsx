@@ -32,8 +32,12 @@ const AppProviders = ({ children }: { children: ReactNode }) => {
 
 // This component reads accessToken from Auth context and passes to SocketProvider
 const AuthConsumerSocketProvider = ({ children }: { children: ReactNode }) => {
-  const { accessToken } = useAuth();
-  return <SocketProvider accessToken={accessToken}>{children}</SocketProvider>;
+  const { isAuthenticated } = useAuth();
+  return (
+    <SocketProvider isAuthenticated={isAuthenticated}>
+      {children}
+    </SocketProvider>
+  );
 };
 
 export default AppProviders;

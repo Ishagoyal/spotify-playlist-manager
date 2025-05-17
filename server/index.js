@@ -10,18 +10,17 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 const axios = require("axios");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
 
 const Vote = require("./models/Vote"); // ✅ Make sure Vote schema includes roomCode, trackId, count, votedBy
 
 const app = express();
 const server = http.createServer(app);
-
+app.use(express.json());
+app.use(cookieParser());
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://spotify-playlist-manager-pearl.vercel.app",
-    ],
+    origin: [process.env.FRONTEND_URL],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -29,14 +28,10 @@ const io = new Server(server, {
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://spotify-playlist-manager-pearl.vercel.app",
-    ],
+    origin: [process.env.FRONTEND_URL],
     credentials: true, // ✅ Match this too
   })
 );
-app.use(express.json());
 
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -115,40 +110,69 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/callback", async (req, res) => {
-  const code = req.query.code;
-
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    code,
-    redirect_uri,
-    client_id,
-    client_secret,
-  });
-
   try {
-    const response = await axios.post(
+    const code = req.query.code;
+    if (!code) return res.status(400).send("No code provided");
+
+    // Check if request is HTTPS (via x-forwarded-proto or protocol)
+    const isSecure =
+      req.headers["x-forwarded-proto"] === "https" || req.protocol === "https";
+
+    // Exchange code for tokens
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri,
+      client_id,
+      client_secret,
+    });
+
+    const tokenResponse = await axios.post(
       "https://accounts.spotify.com/api/token",
-      body,
+      body.toString(),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
 
+    const accessToken = tokenResponse.data.access_token;
+    const refreshToken = tokenResponse.data.refresh_token;
+
+    // Get Spotify user info
     const userProfile = await axios.get("https://api.spotify.com/v1/me", {
-      headers: {
-        Authorization: `Bearer ${response.data.access_token}`,
-      },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     const spotifyUserId = userProfile.data.id;
 
-    const redirectUri = process.env.FRONTEND_URL;
+    // === Set Cookies ===
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 3600 * 1000, // 1 hour
+    };
 
-    res.redirect(
-      `${redirectUri}/auth-success?access_token=${response.data.access_token}&refresh_token=${response.data.refresh_token}&spotify_user_id=${spotifyUserId}`
-    );
-  } catch (err) {
-    console.error("Token exchange error:", err.response?.data || err);
-    res.status(500).send("Auth failed");
+    res.cookie("spotify_access_token", accessToken, cookieOptions);
+    res.cookie("spotify_refresh_token", refreshToken, cookieOptions);
+    res.cookie("spotify_user_id", spotifyUserId, cookieOptions);
+
+    console.log("Cookies set, redirecting...");
+
+    return res.redirect(`${process.env.FRONTEND_URL}/auth-success`);
+  } catch (error) {
+    console.error("Callback error:", error.response?.data || error);
+    return res.status(500).send("Authentication failed");
   }
+});
+
+app.get("/data", (req, res) => {
+  const userId = req.cookies.spotify_user_id;
+  const accessToken = req.cookies.spotify_access_token;
+
+  if (!userId || !accessToken) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  res.json({ userId });
 });
 
 app.get("/search", async (req, res) => {
@@ -266,6 +290,14 @@ app.post("/create-playlist", async (req, res) => {
     console.error("Playlist creation error:", err.response?.data || err);
     res.status(500).json({ error: "Failed to create and populate playlist" });
   }
+});
+
+app.post("/logout", (req, res) => {
+  res
+    .clearCookie("spotify_access_token")
+    .clearCookie("spotify_refresh_token")
+    .clearCookie("spotify_user_id")
+    .sendStatus(200);
 });
 
 // ======== SOCKET.IO ========

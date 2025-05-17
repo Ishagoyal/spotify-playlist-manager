@@ -1,20 +1,22 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useRoom } from "../context/RoomContext";
 
 const RedirectLogic = () => {
   const navigate = useNavigate();
-  const accessToken = localStorage.getItem("spotify_token");
-  const roomCode = localStorage.getItem("room_code");
+  const { isAuthenticated } = useAuth(); // Check login status
+  const { roomCode } = useRoom(); // Get current room code from context
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       navigate("/login");
     } else if (!roomCode) {
       navigate("/join-room");
     } else {
       navigate(`/room/${roomCode}`);
     }
-  }, [accessToken, roomCode, navigate]);
+  }, [isAuthenticated, roomCode, navigate]);
 
   return null;
 };

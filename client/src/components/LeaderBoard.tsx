@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useLeaderBoard } from "../context/LeaderBoardContext";
 import { LeaderboardEntry, SpotifyTrack } from "../type";
 import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/AuthContext";
 
 const Leaderboard = () => {
   const { leaderboard, setLeaderboard } = useLeaderBoard();
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const socket = useSocket();
+  const { spotifyUserId } = useAuth(); // access only user ID
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
@@ -24,51 +26,51 @@ const Leaderboard = () => {
   }, [socket]);
 
   useEffect(() => {
-    const token = localStorage.getItem("spotify_token");
-
     const fetchTrackDetails = async () => {
-      if (!token || leaderboard.length === 0) return;
+      if (leaderboard.length === 0) return;
 
-      const responses = await Promise.all(
-        leaderboard.map((item) =>
-          fetch(`${backendUrl}/leaderboard?track=${item.trackId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then((res) => res.json())
-        )
-      );
+      try {
+        const responses = await Promise.all(
+          leaderboard.map((item) =>
+            fetch(`${backendUrl}/leaderboard?track=${item.trackId}`, {
+              credentials: "include", // send cookies with request
+            }).then((res) => res.json())
+          )
+        );
 
-      const fullResponse = responses.map((data, i) => ({
-        ...data.track,
-        count: leaderboard[i].count,
-      }));
+        const fullResponse = responses.map((data, i) => ({
+          ...data.track,
+          count: leaderboard[i].count,
+        }));
 
-      setTracks(fullResponse);
+        setTracks(fullResponse);
+      } catch (err) {
+        console.error("Error fetching track details:", err);
+      }
     };
 
     fetchTrackDetails();
   }, [leaderboard]);
 
   const handleCreatePlaylist = async () => {
-    const token = localStorage.getItem("spotify_token");
-    const userId = localStorage.getItem("spotify_user_id");
     const name = prompt(
       "Enter a name for your playlist:",
       "My Collab Playlist"
     );
 
-    if (!name || !token || !userId) return;
+    if (!name || !spotifyUserId) return;
 
     const trackIds = leaderboard.map((entry) => entry.trackId);
 
     try {
       const res = await fetch(`${backendUrl}/create-playlist`, {
         method: "POST",
+        credentials: "include", // send cookies
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId,
+          userId: spotifyUserId,
           name,
           trackIds,
         }),

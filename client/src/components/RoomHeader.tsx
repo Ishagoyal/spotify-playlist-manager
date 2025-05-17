@@ -9,7 +9,6 @@ const RoomHeader = () => {
   const { setSearchResults } = useSearch();
   const { setVotes, setVotedTracks } = useVote();
   const socket = useSocket();
-
   const navigate = useNavigate();
 
   const exitRoom = () => {
@@ -22,7 +21,6 @@ const RoomHeader = () => {
     setVotes({});
     setSearchResults([]);
     setVotedTracks(new Set());
-    localStorage.removeItem("room_code");
 
     // Redirect to home page after 500ms
     setTimeout(() => {

@@ -1,24 +1,27 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import RoomHeader from "../components/RoomHeader";
 import SearchBar from "../components/SearchBar";
 import TrackCard from "../components/TrackCard";
 import Leaderboard from "../components/LeaderBoard";
 import { useSearch } from "../context/SearchContext";
 import { useVote } from "../context/VoteContext";
+import { useAuth } from "../context/AuthContext";
 
 const RoomPage = () => {
   const navigate = useNavigate();
+  const { roomCode } = useParams<{ roomCode: string }>();
   const { searchResults } = useSearch();
   const { votedTracks } = useVote();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem("spotify_token");
-    const room = localStorage.getItem("room_code");
-
-    if (!token) navigate("/login");
-    else if (!room) navigate("/join-room");
-  }, [navigate]);
+    if (!isAuthenticated) {
+      navigate("/login");
+    } else if (!roomCode) {
+      navigate("/join-room");
+    }
+  }, [isAuthenticated, roomCode, navigate]);
 
   return (
     <div className="w-full max-w-7xl">

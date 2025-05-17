@@ -35,8 +35,8 @@ export interface LeaderboardEntry {
 }
 
 export type AuthData = {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
   spotifyUserId: string;
 };
 

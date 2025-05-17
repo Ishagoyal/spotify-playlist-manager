@@ -1,32 +1,73 @@
-// context/AuthContext.tsx
-import React, { createContext, useContext, useState } from "react";
-import { AuthData, AuthContextType } from "../type";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+export interface AuthData {
+  spotifyUserId: string;
+  isAuthenticated: boolean;
+}
+
+interface AuthContextType extends AuthData {
+  setAuthData: (data: AuthData) => void;
+  logout: () => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authData, setAuthDataState] = useState<AuthData>({
-    accessToken: localStorage.getItem("spotify_token") || "",
-    refreshToken: localStorage.getItem("spotify_refresh_token") || "",
-    spotifyUserId: localStorage.getItem("spotify_user_id") || "",
-  });
+  const [spotifyUserId, setSpotifyUserId] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const setAuthData = (data: AuthData) => {
-    localStorage.setItem("spotify_token", data.accessToken);
-    localStorage.setItem("spotify_refresh_token", data.refreshToken);
-    localStorage.setItem("spotify_user_id", data.spotifyUserId);
-    setAuthDataState(data);
+    setSpotifyUserId(data.spotifyUserId);
+    setIsAuthenticated(Boolean(data.spotifyUserId));
   };
 
-  const logout = () => {
-    localStorage.removeItem("spotify_token");
-    localStorage.removeItem("spotify_refresh_token");
-    localStorage.removeItem("spotify_user_id");
-    setAuthDataState({ accessToken: "", refreshToken: "", spotifyUserId: "" });
+  const logout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      setSpotifyUserId("");
+      setIsAuthenticated(false);
+    }
   };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/data`, {
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const { userId } = await res.json();
+          setSpotifyUserId(userId);
+          setIsAuthenticated(Boolean(userId));
+        } else {
+          setSpotifyUserId("");
+        }
+      } catch (err) {
+        console.error("Auth fetch error:", err);
+        setSpotifyUserId("");
+        setIsAuthenticated(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ ...authData, setAuthData, logout }}>
+    <AuthContext.Provider
+      value={{
+        spotifyUserId,
+        setAuthData,
+        logout,
+        isAuthenticated,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

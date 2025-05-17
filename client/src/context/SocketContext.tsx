@@ -4,7 +4,7 @@ import { ClientToServerEvents, ServerToClientEvents } from "../type";
 
 interface SocketProviderProps {
   children: React.ReactNode;
-  accessToken: string | null;
+  isAuthenticated: boolean;
 }
 
 const SocketContext = createContext<Socket<
@@ -22,7 +22,7 @@ export const useSocket = () => {
 
 export const SocketProvider = ({
   children,
-  accessToken,
+  isAuthenticated,
 }: SocketProviderProps) => {
   const [socket, setSocket] = useState<Socket<
     ServerToClientEvents,
@@ -32,7 +32,7 @@ export const SocketProvider = ({
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -42,7 +42,6 @@ export const SocketProvider = ({
 
     const newSocket = io(backendUrl, {
       withCredentials: true,
-      auth: { token: accessToken },
     });
 
     newSocket.on("connect", () => {
@@ -64,7 +63,7 @@ export const SocketProvider = ({
       newSocket.disconnect();
       setSocket(null);
     };
-  }, [accessToken, backendUrl]);
+  }, [isAuthenticated, backendUrl]);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>

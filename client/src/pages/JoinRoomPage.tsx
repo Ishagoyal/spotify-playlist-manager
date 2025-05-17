@@ -1,16 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import JoinRoom from "../components/JoinRoom";
+import { useAuth } from "../context/AuthContext";
 
 const JoinRoomPage = () => {
   const navigate = useNavigate();
-  const accessToken = localStorage.getItem("spotify_token");
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       navigate("/login", { replace: true });
     }
-  }, [accessToken, navigate]);
+  }, [isAuthenticated, navigate]);
 
   return <JoinRoom />;
 };

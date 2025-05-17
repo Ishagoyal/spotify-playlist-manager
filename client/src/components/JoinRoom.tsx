@@ -3,26 +3,25 @@ import { useRoom } from "../context/RoomContext";
 import { useVote } from "../context/VoteContext";
 import { motion } from "framer-motion";
 import { useSocket } from "../context/SocketContext";
+import { useAuth } from "../context/AuthContext";
 
 const JoinRoom = () => {
   const { setRoomCode, roomCode, setRoomJoined } = useRoom();
   const { setVotedTracks } = useVote();
   const navigate = useNavigate();
   const socket = useSocket();
+  const { spotifyUserId } = useAuth();
 
   const joinRoom = () => {
-    const userId = localStorage.getItem("spotify_user_id");
-
-    if (!roomCode.trim() || !socket || !userId) return;
+    if (!roomCode.trim() || !socket || !spotifyUserId) return;
 
     const join = () => {
-      socket.emit("joinRoom", { roomCode, userId });
+      socket.emit("joinRoom", { roomCode, userId: spotifyUserId });
       navigate(`/room/${roomCode}`);
       setRoomJoined(true);
-      localStorage.setItem("room_code", roomCode);
       socket.emit(
         "getVotedTracks",
-        { roomCode, userId },
+        { roomCode, userId: spotifyUserId },
         (votedTrackIds: string[]) => {
           setVotedTracks(new Set(votedTrackIds));
         }
