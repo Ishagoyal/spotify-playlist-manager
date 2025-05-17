@@ -11,8 +11,10 @@ const cors = require("cors");
 const axios = require("axios");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
+const { validateRoomCode } = require("./utils/validateRoomCode");
 
 const Vote = require("./models/Vote"); // ✅ Make sure Vote schema includes roomCode, trackId, count, votedBy
+const Room = require("./models/Room");
 
 const app = express();
 const server = http.createServer(app);
@@ -184,6 +186,30 @@ app.get("/data", (req, res) => {
   }
 
   res.json({ userId });
+});
+
+app.post("/create-room", async (req, res) => {
+  const spotifyUserId = req.cookies.spotify_user_id;
+  if (!spotifyUserId) return res.status(401).json({ error: "Unauthorized" });
+
+  const { roomCode } = req.body; // <-- code supplied by client
+  if (!validateRoomCode(roomCode)) {
+    return res.status(400).json({ error: "Invalid room code format." });
+  }
+
+  try {
+    // Ensure the code is unique
+    const exists = await Room.findOne({ roomCode }).lean();
+    if (exists) {
+      return res.status(409).json({ error: "Room code already in use." });
+    }
+
+    await Room.create({ roomCode, hostUserId: spotifyUserId });
+    res.json({ roomCode });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create room" });
+  }
 });
 
 app.get("/search", async (req, res) => {
