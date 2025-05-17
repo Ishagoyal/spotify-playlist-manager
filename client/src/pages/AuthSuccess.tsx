@@ -17,6 +17,7 @@ const AuthSuccess = () => {
         if (userId) {
           setAuthData({
             spotifyUserId: userId,
+            isAuthenticated: Boolean(userId),
           });
           navigate("/join-room");
         } else {
