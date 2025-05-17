@@ -177,7 +177,7 @@ app.get("/data", (req, res) => {
 
 app.get("/search", async (req, res) => {
   const query = req.query.q;
-  const token = req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.spotify_access_token;
 
   if (!token) {
     return res.status(401).json({ error: "Missing token" });
@@ -212,7 +212,7 @@ app.get("/search", async (req, res) => {
 
 app.get("/leaderboard", async (req, res) => {
   const trackId = req.query.track;
-  const token = req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.spotify_access_token;
 
   try {
     const response = await axios.get(
@@ -243,7 +243,7 @@ app.get("/leaderboard", async (req, res) => {
 
 app.post("/create-playlist", async (req, res) => {
   const { userId, name, trackIds } = req.body;
-  const token = req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.spotify_access_token;
 
   if (!userId || !name || !Array.isArray(trackIds) || !token) {
     return res
