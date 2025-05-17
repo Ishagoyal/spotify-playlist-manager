@@ -12,7 +12,7 @@ const AuthSuccess = () => {
       .get(`${import.meta.env.VITE_BACKEND_URL}/data`, {
         withCredentials: true, // 🔑 this sends the cookies
       })
-      .then((res) => {
+      .then((res: any) => {
         const { userId } = res.data;
         if (userId) {
           setAuthData({
