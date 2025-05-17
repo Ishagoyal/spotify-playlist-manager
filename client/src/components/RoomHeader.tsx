@@ -6,11 +6,13 @@ import { useSocket } from "../context/SocketContext";
 import { useState } from "react";
 import ShareRoomModal from "./ShareRoomModal";
 import { Share2 } from "lucide-react";
+import { useLeaderBoard } from "../context/LeaderBoardContext";
 
 const RoomHeader = () => {
   const { setRoomCode, roomCode, setRoomJoined } = useRoom();
   const { setSearchResults } = useSearch();
   const { setVotes, setVotedTracks } = useVote();
+  const { setLeaderboard } = useLeaderBoard();
   const socket = useSocket();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -25,6 +27,7 @@ const RoomHeader = () => {
     setVotes({});
     setSearchResults([]);
     setVotedTracks(new Set());
+    setLeaderboard([]);
 
     // Redirect to home page after 500ms
     setTimeout(() => {
