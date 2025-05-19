@@ -184,7 +184,7 @@ app.get("/callback", async (req, res) => {
 app.get("/data", (req, res) => {
   const userId = req.cookies.spotify_user_id;
   const accessToken = req.cookies.spotify_access_token;
-  const userName = req.cookies.user_details.display_name;
+  const userName = req.cookies.user_details?.display_name;
 
   if (!userId || !accessToken) {
     return res.status(401).json({ error: "Not authenticated" });
