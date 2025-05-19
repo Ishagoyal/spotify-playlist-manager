@@ -10,13 +10,13 @@ const JoinRoom = () => {
   const { setVotedTracks } = useVote();
   const navigate = useNavigate();
   const socket = useSocket();
-  const { spotifyUserId } = useAuth();
+  const { spotifyUserId, userName } = useAuth();
 
   const joinRoom = () => {
     if (!roomCode.trim() || !socket || !spotifyUserId) return;
 
     const join = () => {
-      socket.emit("joinRoom", { roomCode, userId: spotifyUserId });
+      socket.emit("joinRoom", { roomCode, userId: spotifyUserId, userName });
       navigate(`/room/${roomCode}`);
       setRoomJoined(true);
       socket.emit(

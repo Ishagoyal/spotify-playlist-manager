@@ -50,6 +50,8 @@ const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
 
+const rooms = {};
+
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -155,6 +157,7 @@ app.get("/callback", async (req, res) => {
     });
 
     const spotifyUserId = userProfile.data.id;
+    const userDetails = userProfile.data;
 
     // === Set Cookies ===
     const cookieOptions = {
@@ -167,6 +170,7 @@ app.get("/callback", async (req, res) => {
     res.cookie("spotify_access_token", accessToken, cookieOptions);
     res.cookie("spotify_refresh_token", refreshToken, cookieOptions);
     res.cookie("spotify_user_id", spotifyUserId, cookieOptions);
+    res.cookie("user_details", userDetails, cookieOptions);
 
     console.log("Cookies set, redirecting...");
 
@@ -180,12 +184,13 @@ app.get("/callback", async (req, res) => {
 app.get("/data", (req, res) => {
   const userId = req.cookies.spotify_user_id;
   const accessToken = req.cookies.spotify_access_token;
+  const userName = req.cookies.user_details.display_name;
 
   if (!userId || !accessToken) {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  res.json({ userId });
+  res.json({ userId, userName });
 });
 
 app.post("/create-room", async (req, res) => {
@@ -341,9 +346,20 @@ app.post("/logout", (req, res) => {
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
 
-  socket.on("joinRoom", async ({ roomCode, userId }) => {
+  socket.on("joinRoom", async ({ roomCode, userId, userName }) => {
     console.log(`User ${userId} joined room ${roomCode}`);
     socket.join(roomCode);
+
+    socket.roomCode = roomCode;
+    socket.userId = userId;
+
+    if (!rooms[roomCode]) {
+      rooms[roomCode] = new Set();
+    }
+
+    rooms[roomCode].add(JSON.stringify({ userId, userName })); // Use stringified user object for deduping
+
+    io.to(roomCode).emit("activeUsers", [...rooms[roomCode]].map(JSON.parse));
 
     try {
       const votes = await Vote.find({ roomCode });
@@ -427,11 +443,29 @@ io.on("connection", (socket) => {
   });
 
   socket.on("leaveRoom", ({ roomCode }) => {
+    const { userId } = socket;
+    if (roomCode && rooms[roomCode]) {
+      rooms[roomCode] = new Set(
+        [...rooms[roomCode]].filter((u) => JSON.parse(u).userId !== userId)
+      );
+      io.to(roomCode).emit("activeUsers", [...rooms[roomCode]].map(JSON.parse));
+    }
     socket.leave(roomCode);
+    delete socket.roomCode;
+    delete socket.userId;
     console.log(`User left room: ${roomCode}`);
   });
 
   socket.on("disconnect", () => {
+    const { roomCode, userId } = socket;
+    if (roomCode && rooms[roomCode]) {
+      rooms[roomCode] = new Set(
+        [...rooms[roomCode]].filter((u) => JSON.parse(u).userId !== userId)
+      );
+      io.to(roomCode).emit("activeUsers", [...rooms[roomCode]].map(JSON.parse));
+    }
+    delete socket.roomCode;
+    delete socket.userId;
     console.log("Client disconnected:", socket.id);
   });
 });

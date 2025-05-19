@@ -7,6 +7,7 @@ import Leaderboard from "../components/LeaderBoard";
 import { useSearch } from "../context/SearchContext";
 import { useVote } from "../context/VoteContext";
 import { useAuth } from "../context/AuthContext";
+import ActiveUsersList from "../components/ActiveUsersList";
 
 const RoomPage = () => {
   const navigate = useNavigate();
@@ -51,7 +52,8 @@ const RoomPage = () => {
           )}
         </div>
 
-        <div className="bg-zinc-800 p-4 rounded-2xl shadow-lg h-fit sticky top-8">
+        <div className="bg-zinc-800 p-4 rounded-2xl shadow-lg h-fit sticky top-8 space-y-6">
+          <ActiveUsersList />
           <Leaderboard />
         </div>
       </div>

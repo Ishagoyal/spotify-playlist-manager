@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 export interface AuthData {
   spotifyUserId: string;
   isAuthenticated: boolean;
+  userName: string;
 }
 
 interface AuthContextType extends AuthData {
@@ -15,10 +16,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [spotifyUserId, setSpotifyUserId] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userName, setUserName] = useState<string>("");
 
   const setAuthData = (data: AuthData) => {
     setSpotifyUserId(data.spotifyUserId);
     setIsAuthenticated(Boolean(data.spotifyUserId));
+    setUserName(data.userName);
   };
 
   const logout = async () => {
@@ -32,6 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setSpotifyUserId("");
       setIsAuthenticated(false);
+      setUserName("");
     }
   };
 
@@ -43,9 +47,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         if (res.ok) {
-          const { userId } = await res.json();
+          const { userId, userName } = await res.json();
           setSpotifyUserId(userId);
           setIsAuthenticated(Boolean(userId));
+          setUserName(userName);
         } else {
           setSpotifyUserId("");
         }
@@ -53,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Auth fetch error:", err);
         setSpotifyUserId("");
         setIsAuthenticated(false);
+        setUserName("");
       }
     };
 
@@ -66,6 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthData,
         logout,
         isAuthenticated,
+        userName,
       }}
     >
       {children}

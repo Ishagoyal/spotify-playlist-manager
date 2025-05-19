@@ -12,7 +12,7 @@ const CODE_REGEX = /^[A-Z0-9]{2,8}$/; // 2-8 uppercase letters or digits
 export default function CreateRoom() {
   const navigate = useNavigate();
   const socket = useSocket();
-  const { spotifyUserId } = useAuth();
+  const { spotifyUserId, userName } = useAuth();
   const { setRoomCode, setRoomJoined } = useRoom();
 
   const [input, setInput] = useState("");
@@ -37,7 +37,11 @@ export default function CreateRoom() {
       setRoomCode(code);
 
       const join = () => {
-        socket.emit("joinRoom", { roomCode: code, userId: spotifyUserId });
+        socket.emit("joinRoom", {
+          roomCode: code,
+          userId: spotifyUserId,
+          userName: userName,
+        });
         navigate(`/room/${code}`);
         setRoomJoined(true);
       };

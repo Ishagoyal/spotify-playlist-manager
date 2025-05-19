@@ -15,7 +15,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const { votes, setVotes, setVotedTracks } = useVote();
   const { setLeaderboard } = useLeaderBoard();
   const socket = useSocket();
-  const { isAuthenticated, spotifyUserId } = useAuth();
+  const { isAuthenticated, spotifyUserId, userName } = useAuth();
 
   // Set up socket listeners when connected
   useEffect(() => {
@@ -56,7 +56,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       socket.once("connect", () => {
         setRoomJoined(true);
 
-        socket.emit("joinRoom", { roomCode, userId: spotifyUserId });
+        socket.emit("joinRoom", { roomCode, userId: spotifyUserId, userName });
 
         socket.emit(
           "getVotedTracks",

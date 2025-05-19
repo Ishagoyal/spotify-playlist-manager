@@ -13,10 +13,11 @@ export interface ServerToClientEvents {
   initialVotes: (votes: Record<string, number>) => void;
   votedTracks: (trackIds: string[]) => void;
   leaderboardUpdate: (data: LeaderboardEntry[]) => void;
+  activeUsers: (users: { userId: string; userName?: string }[]) => void;
 }
 
 export interface ClientToServerEvents {
-  joinRoom: (data: { roomCode: string; userId: string }) => void;
+  joinRoom: (data: { roomCode: string; userId: string , userName: string}) => void;
   voteTrack: (data: {
     roomCode: string;
     trackId: string;
@@ -44,3 +45,8 @@ export type AuthContextType = AuthData & {
   setAuthData: (data: AuthData) => void;
   logout: () => void;
 };
+
+export interface ActiveUsersListInterface {
+  userId: string;
+  userName?: string;
+}
