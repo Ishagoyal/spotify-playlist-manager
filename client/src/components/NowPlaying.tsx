@@ -122,7 +122,7 @@ const NowPlaying = () => {
   }, [accessToken, transferPlayback, fetchNowPlaying]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (location.pathname.startsWith("/room/")) {
       fetchNowPlaying();
       interval = setInterval(fetchNowPlaying, 5000);
