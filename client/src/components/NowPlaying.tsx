@@ -25,7 +25,7 @@ const NowPlaying = () => {
   const { accessToken } = useAuth();
   const { currentTrack } = useNowPlaying();
 
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const fetchNowPlaying = useCallback(async () => {
     try {
