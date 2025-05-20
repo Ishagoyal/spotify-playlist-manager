@@ -9,37 +9,13 @@ import { useVote } from "../context/VoteContext";
 import { useAuth } from "../context/AuthContext";
 import ActiveUsersList from "../components/ActiveUsersList";
 import NowPlayingBar from "../components/NowPlaying";
-import axios from "axios";
 
 const RoomPage = () => {
   const navigate = useNavigate();
   const { roomCode } = useParams<{ roomCode: string }>();
   const { searchResults } = useSearch();
   const { votedTracks } = useVote();
-  const { isAuthenticated, setAuthData } = useAuth();
-
-  useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/data`, {
-        withCredentials: true, // 🔑 this sends the cookies
-      })
-      .then((res: any) => {
-        const { userId, userName, accessToken } = res.data;
-        if (userId) {
-          setAuthData({
-            spotifyUserId: userId,
-            isAuthenticated: Boolean(userId),
-            userName,
-            accessToken,
-          });
-        } else {
-          navigate("/login");
-        }
-      })
-      .catch(() => {
-        navigate("/login");
-      });
-  }, []);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) {
