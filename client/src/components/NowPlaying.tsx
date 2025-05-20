@@ -16,11 +16,11 @@ const NowPlaying = () => {
     null
   );
   const [isPlaying, setIsPlaying] = useState(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [playerReady, setPlayerReady] = useState(false);
+  const [_deviceId, setDeviceId] = useState<string | null>(null);
+  const [_playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef<any>(null);
   const { accessToken } = useAuth();
-  const { currentTrack, setCurrentTrack } = useNowPlaying();
+  const { currentTrack } = useNowPlaying();
 
   const fetchNowPlaying = useCallback(async () => {
     try {
@@ -110,13 +110,25 @@ const NowPlaying = () => {
     } else {
       window.onSpotifyWebPlaybackSDKReady = loadPlayer;
     }
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.pause().catch(() => {
+          /* ignore errors on pause */
+        });
+        playerRef.current.disconnect();
+        playerRef.current = null;
+      }
+    };
   }, [accessToken, transferPlayback, fetchNowPlaying]);
 
   useEffect(() => {
-    fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 5000);
+    let interval: NodeJS.Timeout;
+    if (location.pathname.startsWith("/room/")) {
+      fetchNowPlaying();
+      interval = setInterval(fetchNowPlaying, 5000);
+    }
     return () => clearInterval(interval);
-  }, [fetchNowPlaying]);
+  }, [location.pathname]);
 
   const handlePlay = async () => {
     if (!currentTrack) return;

@@ -30,7 +30,6 @@ const TrackCard = ({ track, hasVotes }: TrackCardProps) => {
       key={track.id}
       className="bg-zinc-800 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
       onClick={() => {
-        console.log("TrackCard clicked, calling playTrack", track);
         playTrack(track);
       }}
     >
