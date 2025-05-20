@@ -35,6 +35,7 @@ const NowPlaying = () => {
           withCredentials: true,
         }
       );
+
       if (res.status === 200 && res.data?.track) {
         setPlayerState(res.data);
         setIsPlaying(res.data.isPlaying);
@@ -42,8 +43,14 @@ const NowPlaying = () => {
         setPlayerState(null);
         setIsPlaying(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch now playing:", err);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        console.warn("Session expired");
+        // Optionally redirect
+        window.location.href = "/login";
+      } else {
+        console.error("Failed to fetch now playing:", err);
+      }
       setPlayerState(null);
       setIsPlaying(false);
     }
