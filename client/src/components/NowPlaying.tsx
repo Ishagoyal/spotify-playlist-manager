@@ -11,8 +11,6 @@ declare global {
   }
 }
 
-const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
 const NowPlaying = () => {
   const [playerState, setPlayerState] = useState<SpotifyPlayerState | null>(
     null
@@ -74,7 +72,7 @@ const NowPlaying = () => {
 
   // Web Playback SDK init (desktop only)
   useEffect(() => {
-    if (!accessToken || initializedRef.current || isMobile) return;
+    if (!accessToken || initializedRef.current) return;
 
     const loadPlayer = () => {
       const player = new window.Spotify.Player({
