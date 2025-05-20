@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
 const NowPlaying = () => {
   const [playerState, setPlayerState] = useState<SpotifyPlayerState | null>(
     null
@@ -19,20 +21,21 @@ const NowPlaying = () => {
   const [_deviceId, setDeviceId] = useState<string | null>(null);
   const [_playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef<any>(null);
-  const initializedRef = useRef(false); // Prevent multiple SDK inits
+  const initializedRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { accessToken } = useAuth();
-  const { currentTrack, setCurrentTrack } = useNowPlaying();
+  const { currentTrack } = useNowPlaying();
 
   const fetchNowPlaying = useCallback(async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/now-playing`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+        }
       );
       if (res.status === 200 && res.data?.track) {
-        setCurrentTrack(res.data.track);
         setPlayerState(res.data);
         setIsPlaying(res.data.isPlaying);
       } else {
@@ -69,9 +72,9 @@ const NowPlaying = () => {
     [accessToken]
   );
 
-  // Load and initialize Spotify Web Playback SDK
+  // Web Playback SDK init (desktop only)
   useEffect(() => {
-    if (!accessToken || initializedRef.current) return;
+    if (!accessToken || initializedRef.current || isMobile) return;
 
     const loadPlayer = () => {
       const player = new window.Spotify.Player({
@@ -128,7 +131,7 @@ const NowPlaying = () => {
     };
   }, [accessToken, transferPlayback, fetchNowPlaying]);
 
-  // Polling for current track
+  // Polling
   useEffect(() => {
     const pathname = window.location.pathname;
     if (pathname.startsWith("/room/")) {
@@ -145,15 +148,13 @@ const NowPlaying = () => {
   }, [fetchNowPlaying]);
 
   const handlePlay = async () => {
-    if (!currentTrack) return;
     try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/play`,
-        { uri: currentTrack.uri },
-        { withCredentials: true }
-      );
+      const body = currentTrack?.uri ? { uri: currentTrack.uri } : {};
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/play`, body, {
+        withCredentials: true,
+      });
     } catch (err) {
-      console.error("Play error:", err);
+      console.error("Play/resume error:", err);
     }
   };
 

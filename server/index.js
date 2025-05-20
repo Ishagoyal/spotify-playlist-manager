@@ -294,23 +294,23 @@ app.get("/now-playing", async (req, res) => {
 
 // ========== PUT /play ==========
 app.put("/play", async (req, res) => {
-  const { uri } = req.body;
   const accessToken = getToken(req);
-  if (!uri || !accessToken) return res.status(400).send("Missing uri or token");
+  const { uri } = req.body;
+  if (!accessToken) return res.status(400).send("Missing token");
 
   try {
-    await fetch("https://api.spotify.com/v1/me/player/play", {
-      method: "PUT",
+    const body = uri ? { uris: [uri] } : {}; // empty body = resume current playback
+
+    await axios.put("https://api.spotify.com/v1/me/player/play", body, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ uris: [uri] }),
     });
+
     res.sendStatus(204);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Failed to play track");
+    console.error("Play/resume error:", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to play or resume" });
   }
 });
 
