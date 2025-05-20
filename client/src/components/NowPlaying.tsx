@@ -25,6 +25,8 @@ const NowPlaying = () => {
   const { accessToken } = useAuth();
   const { currentTrack } = useNowPlaying();
 
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
   const fetchNowPlaying = useCallback(async () => {
     try {
       const res = await axios.get(
@@ -70,9 +72,45 @@ const NowPlaying = () => {
     [accessToken]
   );
 
+  const fetchAvailableDevices = useCallback(async () => {
+    if (!accessToken) return [];
+    try {
+      const res = await axios.get(
+        "https://api.spotify.com/v1/me/player/devices",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      return res.data.devices || [];
+    } catch (err) {
+      console.error("Failed to fetch devices:", err);
+      return [];
+    }
+  }, [accessToken]);
+
+  // ✅ Mobile: Try to transfer playback to native Spotify app
+  useEffect(() => {
+    const tryTransferToMobile = async () => {
+      if (!accessToken || !isMobile) return;
+
+      const devices = await fetchAvailableDevices();
+      const mobileDevice = devices.find((d: any) => d.type === "Smartphone");
+
+      if (mobileDevice) {
+        await transferPlayback(mobileDevice.id);
+      } else {
+        console.warn("No mobile device found. Ask user to open Spotify app.");
+      }
+    };
+
+    tryTransferToMobile();
+  }, [accessToken, fetchAvailableDevices, transferPlayback]);
+
   // Web Playback SDK init (desktop only)
   useEffect(() => {
-    if (!accessToken || initializedRef.current) return;
+    if (!accessToken || initializedRef.current || isMobile) return;
 
     const loadPlayer = () => {
       const player = new window.Spotify.Player({
@@ -175,6 +213,11 @@ const NowPlaying = () => {
     return (
       <div className="p-4 text-zinc-400 italic text-center">
         Nothing is currently playing
+        {isMobile && (
+          <div className="mt-2 text-sm text-zinc-500">
+            Please open the Spotify app to start playback.
+          </div>
+        )}
       </div>
     );
   }
