@@ -23,7 +23,7 @@ const NowPlaying = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { accessToken } = useAuth();
-  const { currentTrack } = useNowPlaying();
+  const { currentTrack, setCurrentTrack } = useNowPlaying();
 
   const fetchNowPlaying = useCallback(async () => {
     try {
@@ -32,6 +32,7 @@ const NowPlaying = () => {
         { withCredentials: true }
       );
       if (res.status === 200 && res.data?.track) {
+        setCurrentTrack(res.data.track);
         setPlayerState(res.data);
         setIsPlaying(res.data.isPlaying);
       } else {
