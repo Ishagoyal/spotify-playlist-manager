@@ -19,6 +19,9 @@ const NowPlaying = () => {
   const [_deviceId, setDeviceId] = useState<string | null>(null);
   const [_playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef<any>(null);
+  const initializedRef = useRef(false); // Prevent multiple SDK inits
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const { accessToken } = useAuth();
   const { currentTrack } = useNowPlaying();
 
@@ -65,8 +68,9 @@ const NowPlaying = () => {
     [accessToken]
   );
 
+  // Load and initialize Spotify Web Playback SDK
   useEffect(() => {
-    if (!accessToken) return;
+    if (!accessToken || initializedRef.current) return;
 
     const loadPlayer = () => {
       const player = new window.Spotify.Player({
@@ -105,30 +109,39 @@ const NowPlaying = () => {
       player.connect();
     };
 
+    initializedRef.current = true;
+
     if (window.Spotify) {
       loadPlayer();
     } else {
       window.onSpotifyWebPlaybackSDKReady = loadPlayer;
     }
+
     return () => {
       if (playerRef.current) {
-        playerRef.current.pause().catch(() => {
-          /* ignore errors on pause */
-        });
         playerRef.current.disconnect();
         playerRef.current = null;
+        initializedRef.current = false;
+        console.log("Player disconnected");
       }
     };
   }, [accessToken, transferPlayback, fetchNowPlaying]);
 
+  // Polling for current track
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (location.pathname.startsWith("/room/")) {
+    const pathname = window.location.pathname;
+    if (pathname.startsWith("/room/")) {
       fetchNowPlaying();
-      interval = setInterval(fetchNowPlaying, 5000);
+      intervalRef.current = setInterval(fetchNowPlaying, 5000);
     }
-    return () => clearInterval(interval);
-  }, [location.pathname]);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [fetchNowPlaying]);
 
   const handlePlay = async () => {
     if (!currentTrack) return;
