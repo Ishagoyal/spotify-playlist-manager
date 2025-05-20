@@ -5,8 +5,11 @@ import AuthSuccess from "./pages/AuthSuccess";
 import JoinRoomPage from "./pages/JoinRoomPage";
 import RoomPage from "./pages/RoomPage";
 import RedirectLogic from "./components/RedirectLogic";
+import { useRefreshToken } from "./hooks/useRefreshToken";
 
 function App() {
+  useRefreshToken();
+
   return (
     <Router>
       <AppLayout>

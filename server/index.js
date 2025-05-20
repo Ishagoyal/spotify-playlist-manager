@@ -181,6 +181,59 @@ app.get("/callback", async (req, res) => {
   }
 });
 
+app.post("/refresh", async (req, res) => {
+  const refreshToken = req.cookies.spotify_refresh_token;
+  if (!refreshToken)
+    return res.status(401).json({ error: "Missing refresh token" });
+
+  try {
+    const response = await axios.post(
+      "https://accounts.spotify.com/api/token",
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+      {
+        headers: {
+          Authorization:
+            "Basic " +
+            Buffer.from(
+              process.env.SPOTIFY_CLIENT_ID +
+                ":" +
+                process.env.SPOTIFY_CLIENT_SECRET
+            ).toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const { access_token, expires_in } = response.data;
+    // Get Spotify user info
+    const userProfile = await axios.get("https://api.spotify.com/v1/me", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    const spotifyUserId = userProfile.data.id;
+    const userDetails = userProfile.data;
+
+    // === Set Cookies ===
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: expires_in * 1000,
+    };
+
+    res.cookie("spotify_access_token", access_token, cookieOptions);
+    res.cookie("spotify_user_id", spotifyUserId, cookieOptions);
+    res.cookie("user_details", userDetails, cookieOptions);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Refresh failed:", error.response?.data || error.message);
+    res.status(401).json({ error: "Refresh failed" });
+  }
+});
+
 app.get("/data", (req, res) => {
   const userId = req.cookies.spotify_user_id;
   const accessToken = req.cookies.spotify_access_token;
