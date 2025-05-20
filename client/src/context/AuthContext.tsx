@@ -4,6 +4,7 @@ export interface AuthData {
   spotifyUserId: string;
   isAuthenticated: boolean;
   userName: string;
+  accessToken: string;
 }
 
 interface AuthContextType extends AuthData {
@@ -17,11 +18,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [spotifyUserId, setSpotifyUserId] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userName, setUserName] = useState<string>("");
+  const [accessToken, setAccessToken] = useState<string>("");
 
   const setAuthData = (data: AuthData) => {
     setSpotifyUserId(data.spotifyUserId);
     setIsAuthenticated(Boolean(data.spotifyUserId));
     setUserName(data.userName);
+    setAccessToken(data.accessToken);
   };
 
   const logout = async () => {
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSpotifyUserId("");
       setIsAuthenticated(false);
       setUserName("");
+      setAccessToken("");
     }
   };
 
@@ -47,18 +51,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         if (res.ok) {
-          const { userId, userName } = await res.json();
+          const { userId, userName, accessToken } = await res.json();
           setSpotifyUserId(userId);
           setIsAuthenticated(Boolean(userId));
           setUserName(userName);
+          setAccessToken(accessToken);
         } else {
           setSpotifyUserId("");
+          setIsAuthenticated(false);
+          setUserName("");
+          setAccessToken("");
         }
       } catch (err) {
         console.error("Auth fetch error:", err);
         setSpotifyUserId("");
         setIsAuthenticated(false);
         setUserName("");
+        setAccessToken("");
       }
     };
 
@@ -73,6 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout,
         isAuthenticated,
         userName,
+        accessToken,
       }}
     >
       {children}

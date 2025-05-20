@@ -1,9 +1,11 @@
 export interface SpotifyTrack {
+  durationMs: number;
   id: string;
   name: string;
   artists: string;
   image: string;
   url: string;
+  uri: string;
   count?: number;
 }
 
@@ -17,7 +19,11 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  joinRoom: (data: { roomCode: string; userId: string , userName: string}) => void;
+  joinRoom: (data: {
+    roomCode: string;
+    userId: string;
+    userName: string;
+  }) => void;
   voteTrack: (data: {
     roomCode: string;
     trackId: string;
@@ -49,4 +55,11 @@ export type AuthContextType = AuthData & {
 export interface ActiveUsersListInterface {
   userId: string;
   userName?: string;
+}
+
+export interface SpotifyPlayerState {
+  isPlaying: boolean;
+  progressMs: number;
+  durationMs: number;
+  track: SpotifyTrack;
 }

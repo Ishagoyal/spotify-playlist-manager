@@ -67,7 +67,7 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   const scope =
-    "user-read-private user-read-email playlist-modify-private playlist-modify-public";
+    "user-read-private user-read-email playlist-modify-private playlist-modify-public user-read-playback-state user-read-currently-playing user-modify-playback-state streaming app-remote-control";
 
   const authUrl =
     "https://accounts.spotify.com/authorize?" +
@@ -190,7 +190,7 @@ app.get("/data", (req, res) => {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  res.json({ userId, userName });
+  res.json({ userId, userName, accessToken });
 });
 
 app.post("/create-room", async (req, res) => {
@@ -243,6 +243,7 @@ app.get("/search", async (req, res) => {
       artists: track.artists.map((a) => a.name).join(", "),
       image: track.album.images?.[0]?.url || "",
       url: track.external_urls.spotify,
+      uri: track.uri,
     }));
 
     res.json({ tracks });
@@ -250,6 +251,109 @@ app.get("/search", async (req, res) => {
     console.error("Spotify search error:", err.response?.data || err);
     res.status(500).json({ error: "Search failed" });
   }
+});
+
+const SPOTIFY_API = "https://api.spotify.com/v1";
+
+// Middleware to extract token
+const getToken = (req) => req.cookies.spotify_access_token;
+
+// ========== GET /now-playing ==========
+app.get("/now-playing", async (req, res) => {
+  const token = getToken(req);
+  if (!token) return res.status(401).json({ error: "Missing access token" });
+
+  const response = await fetch(`${SPOTIFY_API}/me/player`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (response.status === 204 || response.status === 202) {
+    return res.status(204).send(); // No playback info
+  }
+
+  const data = await response.json();
+  if (!data || !data.item) return res.status(204).send();
+
+  const track = {
+    id: data.item.id,
+    name: data.item.name,
+    artists: data.item.artists.map((a) => a.name).join(", "),
+    image: data.item.album.images[0].url,
+    uri: data.item.uri,
+    url: data.item.external_urls.spotify,
+  };
+
+  res.json({
+    isPlaying: data.is_playing,
+    progressMs: data.progress_ms,
+    durationMs: data.item.duration_ms,
+    device: data.device, // includes device name, id, type
+    track,
+  });
+});
+
+// ========== PUT /play ==========
+app.put("/play", async (req, res) => {
+  const { uri } = req.body;
+  const accessToken = getToken(req);
+  if (!uri || !accessToken) return res.status(400).send("Missing uri or token");
+
+  try {
+    await fetch("https://api.spotify.com/v1/me/player/play", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ uris: [uri] }),
+    });
+    res.sendStatus(204);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to play track");
+  }
+});
+
+// ========== PUT /pause ==========
+app.put("/pause", async (req, res) => {
+  const token = getToken(req);
+  const { device_id } = req.body;
+
+  if (!token) return res.status(401).json({ error: "Missing access token" });
+
+  const url = new URL(`${SPOTIFY_API}/me/player/pause`);
+  if (device_id) url.searchParams.set("device_id", device_id);
+
+  const response = await fetch(url.toString(), {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  res.sendStatus(response.status);
+});
+
+// ========== PUT /transfer-playback ==========
+app.put("/transfer-playback", async (req, res) => {
+  const token = getToken(req);
+  const { device_id } = req.body;
+
+  if (!token || !device_id) {
+    return res.status(400).json({ error: "Missing token or device_id" });
+  }
+
+  const response = await fetch(`${SPOTIFY_API}/me/player`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      device_ids: [device_id],
+      play: true,
+    }),
+  });
+
+  res.sendStatus(response.status);
 });
 
 app.get("/leaderboard", async (req, res) => {

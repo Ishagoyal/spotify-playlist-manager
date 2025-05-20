@@ -13,12 +13,13 @@ const AuthSuccess = () => {
         withCredentials: true, // 🔑 this sends the cookies
       })
       .then((res: any) => {
-        const { userId , userName} = res.data;
+        const { userId, userName, accessToken } = res.data;
         if (userId) {
           setAuthData({
             spotifyUserId: userId,
             isAuthenticated: Boolean(userId),
-            userName
+            userName,
+            accessToken,
           });
           navigate("/join-room");
         } else {
