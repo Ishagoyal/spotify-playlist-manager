@@ -13,7 +13,6 @@ export const useRefreshToken = () => {
         console.log("Access token refreshed successfully");
       } catch (err) {
         console.error("Token refresh failed", err);
-        window.location.href = "/login"; // Or handle error
       }
     };
 
