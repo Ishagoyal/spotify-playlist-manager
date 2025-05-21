@@ -177,6 +177,15 @@ app.get("/callback", async (req, res) => {
     return res.redirect(`${process.env.FRONTEND_URL}/auth-success`);
   } catch (error) {
     console.error("Callback error:", error.response?.data || error);
+    // Clear cookies
+    res.clearCookie("spotify_access_token", { secure: true, sameSite: "None" });
+    res.clearCookie("spotify_refresh_token", {
+      secure: true,
+      sameSite: "None",
+    });
+    res.clearCookie("spotify_user_id", { secure: true, sameSite: "None" });
+    res.clearCookie("user_details", { secure: true, sameSite: "None" });
+
     return res.status(500).send("Authentication failed");
   }
 });
@@ -230,6 +239,14 @@ app.post("/refresh", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Refresh failed:", error.response?.data || error.message);
+    // Clear cookies
+    res.clearCookie("spotify_access_token", { secure: true, sameSite: "None" });
+    res.clearCookie("spotify_refresh_token", {
+      secure: true,
+      sameSite: "None",
+    });
+    res.clearCookie("spotify_user_id", { secure: true, sameSite: "None" });
+    res.clearCookie("user_details", { secure: true, sameSite: "None" });
     res.status(401).json({ error: "Refresh failed" });
   }
 });
