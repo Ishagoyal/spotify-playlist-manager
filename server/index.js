@@ -1,9 +1,14 @@
-require("dotenv").config({
+const dotenv = require("dotenv");
+
+// Hosting providers (including Render) supply environment variables directly.
+// Local development can optionally use .env.development or a regular .env file.
+dotenv.config({
   path:
     process.env.NODE_ENV === "production"
       ? ".env.production"
       : ".env.development",
 });
+dotenv.config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -52,13 +57,22 @@ const redirect_uri = process.env.SPOTIFY_REDIRECT_URI;
 
 const rooms = {};
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is not configured. Database-backed routes will fail.");
+} else {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => console.log("✅ Connected to MongoDB"))
+    .catch((err) => {
+      console.error("❌ MongoDB connection error:", err);
+      if (err.code === "ENOTFOUND") {
+        console.error(
+          "Check MONGO_URI in Render: copy the current connection string from MongoDB Atlas. " +
+            "The cluster hostname in this URI does not resolve."
+        );
+      }
+    });
+}
 
 // ======== ROUTES ========
 app.get("/", (req, res) => {
